@@ -1,6 +1,6 @@
 // import { useState } from "react";
 import "./App.css";
-import { MegamoriMap } from "./components/map";
+import { MapComponent } from "./components/map";
 
 function App() {
   // 表示するコンポーネントを決定するStateを設定
@@ -12,7 +12,7 @@ function App() {
     // currentViewStateに伴ってSwitch文で切り替え
     switch (currentView) {
       case "map":
-        return <MegamoriMap />;
+        return <MapComponent />;
     }
   };
 
