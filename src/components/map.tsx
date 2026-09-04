@@ -13,6 +13,7 @@ export const MegamoriMap = () => {
 
   const mapName = "MegamoriMap";
   const region = "ap-northeast-1";
+  const colorScheme = "Light";
 
   // 地図の中心(札幌駅)
   const initialLat: number = 43.06882911246343;
@@ -26,7 +27,7 @@ export const MegamoriMap = () => {
     // 地図の初期化（HTMLのscriptタグ内でやっていたことと全く同じ記述）
     mapRef.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: `https://maps.geo.${region}.amazonaws.com/maps/v0/maps/${mapName}/style-descriptor?key=${API_KEY}`,
+      style: `https://maps.geo.${region}.amazonaws.com/maps/v2/maps/${mapName}/style-descriptor?key=${API_KEY}&color-scheme=${colorScheme}`,
       center: [initialLon, initialLat],
       zoom: initialZoom,
     });
