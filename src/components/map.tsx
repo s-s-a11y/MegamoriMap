@@ -51,7 +51,7 @@ export function MapComponent() {
       //   地図の中心とする座標
       center: [position.longitude, position.latitude],
       //   地図の縮尺レベルを定める
-      zoom: 12,
+      zoom: 16,
     });
     // 拡大/縮小ボタンの追加
     map.addControl(new maplibregl.NavigationControl(), "top-right");
