@@ -55,6 +55,15 @@ export function MapComponent() {
     });
     // 拡大/縮小ボタンの追加
     map.addControl(new maplibregl.NavigationControl(), "top-right");
+    // 地図にユーザーの位置情報を表示するコントロールを追加
+    map.addControl(
+      new maplibregl.GeolocateControl({
+        positionOptions: {
+          enableHighAccuracy: true,
+        },
+        trackUserLocation: true,
+      }),
+    );
     // コンポーネントが描画されなくなると同時にデータを消去する処理(メモリリーク対策)
     return () => map.remove();
   }, [position]);
