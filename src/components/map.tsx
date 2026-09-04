@@ -27,7 +27,7 @@ export const MegamoriMap = () => {
     // 地図の初期化（HTMLのscriptタグ内でやっていたことと全く同じ記述）
     mapRef.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: `https://maps.geo.${region}.amazonaws.com/maps/v2/maps/${mapName}/style-descriptor?key=${API_KEY}&color-scheme=${colorScheme}`,
+      style: `https://maps.geo.${region}.amazonaws.com/maps/v0/maps/${mapName}/style-descriptor?key=${API_KEY}&color-scheme=${colorScheme}`,
       center: [initialLon, initialLat],
       zoom: initialZoom,
     });
