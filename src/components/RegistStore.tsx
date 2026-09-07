@@ -1,9 +1,5 @@
 import { useState } from "react";
 
-// ------------------------------------------------------------
-// 型定義（このファイル専用。他のファイルには依存しない）
-// ------------------------------------------------------------
-
 // 店舗検索API（SearchStore）が返す検索結果1件分
 // = Amazon Location Serviceの検索結果をそのまま返している
 interface SearchResult {
@@ -15,9 +11,10 @@ interface SearchResult {
   Position: [number, number]; // [経度, 緯度]
 }
 
+// 読み込み情報表示用type
 type Status = "idle" | "loading" | "success" | "error";
 
-// ★追加：App.tsx から画面切り替え関数を受け取るためのprops
+// App.tsx から画面切り替え関数を受け取るためのprops
 interface RegisterStorePageProps {
   onNavigate: (view: "map" | "regist-store" | "regist-menu") => void;
 }
@@ -43,6 +40,7 @@ async function readErrorMessage(res: Response): Promise<string> {
   }
 }
 
+// 店舗登録用ページ
 export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
   // ---- 検索まわりの状態 ----
   const [keyword, setKeyword] = useState("");
@@ -57,6 +55,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
 
   // 「検索」ボタンが押されたときの処理
   const handleSearch = async (e: React.FormEvent) => {
+    // ページリロードの防止
     e.preventDefault();
     if (!keyword.trim()) return;
 
@@ -69,6 +68,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
       const apiUrl =
         "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/SearchStore";
 
+      // Lambda関数　SearchStoreに接続
       const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
