@@ -16,9 +16,23 @@ interface Position {
   longitude: number | null;
 }
 
+type Store = {
+  place_id: string;
+  title: string;
+  avg_price: number;
+  address_label: string;
+  store_url: string;
+  longitude: number;
+  latitude: number;
+};
+
 export function MapComponent() {
   // マップ表示用のDOMを取得する。
   const mapContainer = useRef<HTMLDivElement | null>(null);
+  //   マップ保存用UseRef
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  //   マーカーデータ保存用useRef
+  const markersRef = useRef<maplibregl.Marker[]>([]);
   // 現在地取得用State
   const [position, setPosition] = useState<Position>({
     latitude: null,
@@ -28,6 +42,8 @@ export function MapComponent() {
   const apiKey = import.meta.env.VITE_MAP_API_KEY;
   const mapName = import.meta.env.VITE_MAP_NAME;
   const region = import.meta.env.VITE_AWS_REGION;
+  //   注文履歴格納用State
+  const [stores, setStores] = useState<Store[]>([]);
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition((pos) => {
@@ -35,6 +51,23 @@ export function MapComponent() {
         latitude: pos.coords.latitude,
         longitude: pos.coords.longitude,
       });
+      fetch(
+        "https://lyzfi7vcic.execute-api.ap-northeast-1.amazonaws.com/OrderProgramStage/OrderProgram/CheckOrder",
+        {
+          method: "POST",
+          // HeaderにJson形式であることを示す。
+          headers: {
+            "Content-Type": "application/json",
+          },
+          // 入力データをJson形式の文字列に変換して送信。
+          body: JSON.stringify({
+            longitude: pos.coords.longitude,
+            latitude: pos.coords.latitude,
+          }),
+        },
+      )
+        .then((res) => res.json())
+        .then((data) => setStores(data));
     });
   }, []);
 
@@ -53,6 +86,7 @@ export function MapComponent() {
       //   地図の縮尺レベルを定める
       zoom: 16,
     });
+    mapRef.current = map;
     // 拡大/縮小ボタンの追加
     map.addControl(new maplibregl.NavigationControl(), "top-right");
     // 地図にユーザーの位置情報を表示するコントロールを追加
@@ -64,9 +98,35 @@ export function MapComponent() {
         trackUserLocation: true,
       }),
     );
+
     // コンポーネントが描画されなくなると同時にデータを消去する処理(メモリリーク対策)
-    return () => map.remove();
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
   }, [position]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return; // 地図がまだ無ければ何もしない
+
+    // 前回分のマーカーを消してから作り直す（重複防止）
+    markersRef.current.forEach((marker) => marker.remove());
+    markersRef.current = [];
+
+    stores.forEach((store) => {
+      const popup = new maplibregl.Popup({ offset: 24 }).setHTML(
+        `<strong>${store.title}</strong><br/>${store.address_label}`,
+      );
+
+      const marker = new maplibregl.Marker({ color: "#c8442d" })
+        .setLngLat([store.longitude, store.latitude])
+        .setPopup(popup)
+        .addTo(map);
+
+      markersRef.current.push(marker);
+    });
+  }, [stores]);
 
   return (
     <div className="megamap">
