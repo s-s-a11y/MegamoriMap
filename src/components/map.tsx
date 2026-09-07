@@ -26,7 +26,12 @@ type Store = {
   latitude: number;
 };
 
-export function MapComponent() {
+// ★追加：App.tsx から画面切り替え関数を受け取るためのprops
+interface MapComponentProps {
+  onNavigate: (view: "map" | "regist-store" | "regist-menu") => void;
+}
+
+export function MapComponent({ onNavigate }: MapComponentProps) {
   // マップ表示用のDOMを取得する。
   const mapContainer = useRef<HTMLDivElement | null>(null);
   //   マップ保存用UseRef
@@ -131,6 +136,17 @@ export function MapComponent() {
   return (
     <div className="megamap">
       <h1>メガ盛りマップ</h1>
+
+      {/* ★追加：登録ページへの移動ボタン */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        <button onClick={() => onNavigate("regist-store")}>
+          店舗を登録する
+        </button>
+        <button onClick={() => onNavigate("regist-menu")}>
+          メニューを登録する
+        </button>
+      </div>
+
       <div ref={mapContainer} style={{ width: "70%", height: "500px" }} />
     </div>
   );

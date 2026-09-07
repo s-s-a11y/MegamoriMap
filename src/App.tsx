@@ -1,18 +1,28 @@
-// import { useState } from "react";
+import { useState } from "react";
 import "./App.css";
 import { MapComponent } from "./components/map";
+// ↓ 実際の配置場所に合わせてパスを調整してください
+import { RegisterStorePage } from "./components/RegistStore";
+import { RegisterMenuPage } from "./components/RegistMenu";
+
+// 表示する画面の種類。3画面共通でこの型を使う。
+export type ViewName = "map" | "regist-store" | "regist-menu";
 
 function App() {
-  // 表示するコンポーネントを決定するStateを設定
-  // const [currentView, setCurrentView] = useState<string>("map");
-  const currentView = "map";
+  // 表示するコンポーネントを決定するState
+  const [currentView, setCurrentView] = useState<ViewName>("map");
 
   // 描画するコンポーネントを決定する処理
+  // 各画面には setCurrentView をそのまま onNavigate として渡す。
+  // 各画面は「onNavigate("regist-menu")」のように呼ぶだけで画面遷移できる。
   const renderView = () => {
-    // currentViewStateに伴ってSwitch文で切り替え
     switch (currentView) {
       case "map":
-        return <MapComponent />;
+        return <MapComponent onNavigate={setCurrentView} />;
+      case "regist-store":
+        return <RegisterStorePage onNavigate={setCurrentView} />;
+      case "regist-menu":
+        return <RegisterMenuPage onNavigate={setCurrentView} />;
     }
   };
 
