@@ -72,7 +72,7 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
         },
       )
         .then((res) => res.json())
-        .then((data) => setStores(data));
+        .then((data) => setStores(data.stores ?? []));
     });
   }, []);
 
