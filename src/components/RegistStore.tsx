@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // 店舗検索API（SearchStore）が返す検索結果1件分
 // = Amazon Location Serviceの検索結果をそのまま返している
@@ -11,6 +11,11 @@ interface SearchResult {
   Position: [number, number]; // [経度, 緯度]
 }
 
+interface Position {
+  latitude: number | null;
+  longitude: number | null;
+}
+
 // 読み込み情報表示用type
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -19,8 +24,8 @@ interface RegisterStorePageProps {
   onNavigate: (view: "map" | "regist-store" | "regist-menu") => void;
 }
 
-// 池袋駅付近。検索の基準座標として使う。
-const DEFAULT_SEARCH_ORIGIN = { longitude: 139.7109, latitude: 35.7295 };
+// 池袋駅付近。現在地が取得できるまでの初期値、および取得に失敗した場合の保険として使う。
+const FALLBACK_SEARCH_ORIGIN = { longitude: 139.7109, latitude: 35.7295 };
 
 // ------------------------------------------------------------
 // エラーメッセージの読み取り
@@ -42,6 +47,28 @@ async function readErrorMessage(res: Response): Promise<string> {
 
 // 店舗登録用ページ
 export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
+  const [position, setPosition] = useState<Position>({
+    latitude: null,
+    longitude: null,
+  });
+
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setPosition({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+        });
+      },
+      (err) => {
+        // 取得失敗（許可されなかった等）の場合はログだけ残し、FALLBACK_SEARCH_ORIGINを使い続ける
+        console.warn(
+          "現在地の取得に失敗しました。デフォルトの座標を使用します。",
+          err,
+        );
+      },
+    );
+  }, []);
   // ---- 検索まわりの状態 ----
   const [keyword, setKeyword] = useState("");
   const [searchStatus, setSearchStatus] = useState<Status>("idle");
@@ -68,14 +95,20 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
       const apiUrl =
         "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/SearchStore";
 
+      // ★変更：現在地が取れていればそれを使い、まだなければフォールバック座標を使う
+      const origin =
+        position.longitude !== null && position.latitude !== null
+          ? { longitude: position.longitude, latitude: position.latitude }
+          : FALLBACK_SEARCH_ORIGIN;
+
       // Lambda関数　SearchStoreに接続
       const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           keyword,
-          longitude: DEFAULT_SEARCH_ORIGIN.longitude,
-          latitude: DEFAULT_SEARCH_ORIGIN.latitude,
+          longitude: origin.longitude,
+          latitude: origin.latitude,
         }),
       });
 
