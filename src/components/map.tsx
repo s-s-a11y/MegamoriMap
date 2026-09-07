@@ -57,7 +57,7 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
         longitude: pos.coords.longitude,
       });
       fetch(
-        "https://lyzfi7vcic.execute-api.ap-northeast-1.amazonaws.com/OrderProgramStage/OrderProgram/CheckOrder",
+        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/ShowMegaMap",
         {
           method: "POST",
           // HeaderにJson形式であることを示す。

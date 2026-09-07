@@ -66,7 +66,8 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
     setRegistStatus("idle");
 
     try {
-      const apiUrl = import.meta.env.VITE_SEARCH_STORE_API_URL;
+      const apiUrl =
+        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/SearchStore";
 
       const res = await fetch(apiUrl, {
         method: "POST",
@@ -99,7 +100,8 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
     setRegistError(null);
 
     try {
-      const apiUrl = import.meta.env.VITE_REGIST_STORE_API_URL;
+      const apiUrl =
+        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/RegistStore";
 
       // RegistStore.py の check_input() が読む形に合わせる：
       // PlaceId / Title / Position はそのまま、

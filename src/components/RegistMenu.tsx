@@ -67,7 +67,8 @@ export function RegisterMenuPage({ onNavigate }: RegisterMenuPageProps) {
 
     (async () => {
       try {
-        const apiUrl = import.meta.env.VITE_SHOW_MEGA_MAP_API_URL;
+        const apiUrl =
+          "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/ShowMegaMap";
 
         const res = await fetch(apiUrl, {
           method: "POST",
@@ -117,7 +118,8 @@ export function RegisterMenuPage({ onNavigate }: RegisterMenuPageProps) {
     setSubmitError(null);
 
     try {
-      const apiUrl = import.meta.env.VITE_REGIST_MENU_API_URL;
+      const apiUrl =
+        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/RegistMenu";
 
       const res = await fetch(apiUrl, {
         method: "POST",
