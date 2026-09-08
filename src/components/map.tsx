@@ -178,7 +178,7 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
           メニューを登録する
         </button>
       </div>
-      {/* ★追加：カテゴリー絞り込み */}
+      {/* カテゴリー絞り込み */}
       <div style={{ marginBottom: 12 }}>
         <label>
           カテゴリーで絞り込み：{" "}
