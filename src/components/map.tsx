@@ -146,6 +146,34 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
   return (
     <div className="megamap">
       <h1>メガ盛りマップ</h1>
+      <table border={1}>
+        <tr>
+          <th>酒名</th>
+          <th>価格</th>
+          <th>数量</th>
+          <th>操作</th>
+        </tr>
+        {stores.map((store) => (
+          <tr key={store.place_id}>
+            {/* // 酒IDを基準にリスト表示 */}
+            <td>
+              <span>{store.title}</span>
+            </td>
+            <td>
+              <span>円</span>
+            </td>
+            <td>
+              <span></span>
+            </td>
+            <td>
+              <span>
+                {/* 文字列化して表示 */}
+                <button>カートに追加</button>
+              </span>{" "}
+            </td>
+          </tr>
+        ))}
+      </table>
 
       {/* 登録ページへの移動ボタン */}
       <div style={{ gap: 8, marginBottom: 12 }}>
