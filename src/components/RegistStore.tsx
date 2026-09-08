@@ -89,6 +89,15 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
   const [registError, setRegistError] = useState<string | null>(null);
   const [category, setCategory] = useState<string>("");
 
+  // ---- カテゴリー作成モーダルまわりの状態 ----
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [categoryRegistStatus, setCategoryRegistStatus] =
+    useState<Status>("idle");
+  const [categoryRegistError, setCategoryRegistError] = useState<string | null>(
+    null,
+  );
+
   // 「検索」ボタンが押されたときの処理
   const handleSearch = async (e: React.FormEvent) => {
     // ページリロードの防止
@@ -181,6 +190,59 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
     setCategory(e.target.value);
   };
 
+  // モーダルを開く。前回の入力内容・エラー・成功状態を初期化してから開く。
+  const openCategoryModal = () => {
+    setNewCategoryName("");
+    setCategoryRegistStatus("idle");
+    setCategoryRegistError(null);
+    setIsCategoryModalOpen(true);
+  };
+
+  const closeCategoryModal = () => {
+    setIsCategoryModalOpen(false);
+  };
+
+  // 「登録」ボタンが押されたときの処理（カテゴリー作成API: RegistStoreCategory）
+  const handleCreateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedName = newCategoryName.trim();
+    if (!trimmedName) return;
+
+    setCategoryRegistStatus("loading");
+    setCategoryRegistError(null);
+
+    try {
+      const apiUrl =
+        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/RegistStoreCategory";
+
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ store_category_name: trimmedName }),
+      });
+
+      // 409は「そのカテゴリー名は既に存在する」という意味なので、
+      // エラー扱いにせず、そのまま既存のカテゴリーとして使う。
+      if (!res.ok && res.status !== 409) {
+        throw new Error(await readErrorMessage(res));
+      }
+
+      // 一覧にまだ無ければ追加し、作成したカテゴリーを選択状態にする
+      setCategories((prev) =>
+        prev.includes(trimmedName) ? prev : [...prev, trimmedName],
+      );
+      setCategory(trimmedName);
+
+      setCategoryRegistStatus("success");
+      closeCategoryModal();
+    } catch (err) {
+      setCategoryRegistError(
+        err instanceof Error ? err.message : "カテゴリーの作成に失敗しました",
+      );
+      setCategoryRegistStatus("error");
+    }
+  };
+
   return (
     <div
       style={{
@@ -225,14 +287,27 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
         <p>該当する店舗が見つかりませんでした。</p>
       )}
 
-      <div>
+      {/* --- カテゴリー選択＋新規作成ボタン --- */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 16,
+        }}
+      >
         <label>カテゴリー：</label>
         <select value={category} onChange={handleChange}>
           <option value="">選択してください</option>
           {categories.map((ctgly) => (
-            <option value={ctgly}>{ctgly}</option>
+            <option key={ctgly} value={ctgly}>
+              {ctgly}
+            </option>
           ))}
         </select>
+        <button type="button" onClick={openCategoryModal}>
+          カテゴリを作成する
+        </button>
       </div>
 
       {/* --- 検索結果一覧（ラジオボタンで1件選ぶ） --- */}
@@ -291,6 +366,76 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
       )}
       {registStatus === "error" && (
         <p style={{ color: "red" }}>{registError}</p>
+      )}
+
+      {/* --- カテゴリー作成モーダル --- */}
+      {isCategoryModalOpen && (
+        <div
+          // オーバーレイ：クリックしたら閉じる
+          onClick={closeCategoryModal}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+          }}
+        >
+          <div
+            // モーダル本体：クリックしてもオーバーレイまで伝播させず閉じないようにする
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#fff",
+              borderRadius: 8,
+              padding: 24,
+              width: "90%",
+              maxWidth: 360,
+            }}
+          >
+            <h2 style={{ marginTop: 0 }}>新しいカテゴリーを作成</h2>
+
+            <form onSubmit={handleCreateCategory}>
+              <input
+                type="text"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="カテゴリー名（例: つけ麺）"
+                autoFocus
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  marginBottom: 12,
+                  boxSizing: "border-box",
+                }}
+              />
+
+              {categoryRegistStatus === "error" && (
+                <p style={{ color: "red", marginTop: 0 }}>
+                  {categoryRegistError}
+                </p>
+              )}
+
+              <div
+                style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
+              >
+                <button type="button" onClick={closeCategoryModal}>
+                  キャンセル
+                </button>
+                <button
+                  type="submit"
+                  disabled={
+                    categoryRegistStatus === "loading" ||
+                    !newCategoryName.trim()
+                  }
+                >
+                  {categoryRegistStatus === "loading" ? "登録中..." : "登録"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
