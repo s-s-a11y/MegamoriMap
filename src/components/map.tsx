@@ -167,6 +167,15 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
   return (
     <div className="megamap">
       <h1>メガ盛りマップ</h1>
+      {/* 登録ページへの移動ボタン */}
+      <div style={{ gap: 8, marginBottom: 12 }}>
+        <button onClick={() => onNavigate("regist-store")}>
+          店舗を登録する
+        </button>
+        <button onClick={() => onNavigate("regist-menu")}>
+          メニューを登録する
+        </button>
+      </div>
       <table border={1}>
         <tr>
           <th>店舗名</th>
@@ -193,16 +202,6 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
           </tr>
         ))}
       </table>
-
-      {/* 登録ページへの移動ボタン */}
-      <div style={{ gap: 8, marginBottom: 12 }}>
-        <button onClick={() => onNavigate("regist-store")}>
-          店舗を登録する
-        </button>
-        <button onClick={() => onNavigate("regist-menu")}>
-          メニューを登録する
-        </button>
-      </div>
 
       <div ref={mapContainer} style={{ width: "70%", height: "500px" }} />
     </div>
