@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 // maplibre-glをインポート(V6対応版)
 import * as maplibregl from "maplibre-gl";
 // 地図表示の際のstylesheetを読み込み
@@ -28,6 +28,8 @@ type Store = {
   store_category_name: string;
 };
 
+const ALL_CATEGORIES = "";
+
 // App.tsx から画面切り替え関数を受け取るためのprops
 interface MapComponentProps {
   onNavigate: (view: "map" | "regist-store" | "regist-menu") => void;
@@ -51,6 +53,7 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
   const region = import.meta.env.VITE_AWS_REGION;
   //   店舗情報格納用State
   const [stores, setStores] = useState<Store[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<string>(ALL_CATEGORIES);
 
   //   一番最初に行うuseEffect　現在地座標と店舗情報の獲得を行う
   useEffect(() => {
@@ -119,30 +122,28 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
     };
   }, [position]);
 
-  //   店舗情報が読み込まれた際のuseEffect
-  //   useEffect(() => {
-  //     const map = mapRef.current; //マップをuseRefから取得
-  //     if (!map) return; // 地図がまだ無ければ何もしない
+  // storesの中に実際に登場するカテゴリー名だけを重複無しで抽出する。
+  // ShowStoreCategoryを別途呼ばなくても、今表示している店舗データだけから作れる。
+  const categoryOptions = useMemo(() => {
+    const names = stores
+      .map((store) => store.store_category_name)
+      .filter((name): name is string => Boolean(name));
+    return Array.from(new Set(names));
+  }, [stores]);
 
-  //     // 前回分のマーカーを消してから作り直す（重複防止）
-  //     markersRef.current.forEach((marker) => marker.remove());
-  //     markersRef.current = [];
+  // categoryFilterに応じて表示対象の店舗を絞り込む
+  const filteredStores = useMemo(() => {
+    if (categoryFilter === ALL_CATEGORIES) return stores;
+    return stores.filter(
+      (store) => store.store_category_name === categoryFilter,
+    );
+  }, [stores, categoryFilter]);
 
-  //     // 獲得店舗情報の分マーカーを作成　for store in storesのような働き
-  //     stores.forEach((store) => {
-  //       // ポップアップの作成
-  //       const popup = new maplibregl.Popup({ offset: 24 }).setHTML(
-  //         `<strong>${store.title}</strong><br/>${store.address_label}`,
-  //       );
-  //       // マーカーの作成
-  //       const marker = new maplibregl.Marker({ color: "#c8442d" })
-  //         .setLngLat([store.longitude, store.latitude])
-  //         .setPopup(popup)
-  //         .addTo(map);
-
-  //       markersRef.current.push(marker);
-  //     });
-  //   }, [stores]);
+  const handleCategoryFilterChange = (
+    e: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    setCategoryFilter(e.target.value);
+  };
 
   const handleShowMap = (store: Store) => {
     const map = mapRef.current; //マップをuseRefから取得
@@ -177,13 +178,27 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
           メニューを登録する
         </button>
       </div>
+      {/* ★追加：カテゴリー絞り込み */}
+      <div style={{ marginBottom: 12 }}>
+        <label>
+          カテゴリーで絞り込み：{" "}
+          <select value={categoryFilter} onChange={handleCategoryFilterChange}>
+            <option value={ALL_CATEGORIES}>すべて</option>
+            {categoryOptions.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
       <table border={1}>
         <tr>
           <th>店舗名</th>
           <th>カテゴリー</th>
           <th>表示</th>
         </tr>
-        {stores.map((store) => (
+        {filteredStores.map((store) => (
           <tr key={store.place_id}>
             {/* // 酒IDを基準にリスト表示 */}
             <td>
