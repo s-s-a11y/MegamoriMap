@@ -119,7 +119,31 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
   }, [position]);
 
   //   店舗情報が読み込まれた際のuseEffect
-  useEffect(() => {
+  //   useEffect(() => {
+  //     const map = mapRef.current; //マップをuseRefから取得
+  //     if (!map) return; // 地図がまだ無ければ何もしない
+
+  //     // 前回分のマーカーを消してから作り直す（重複防止）
+  //     markersRef.current.forEach((marker) => marker.remove());
+  //     markersRef.current = [];
+
+  //     // 獲得店舗情報の分マーカーを作成　for store in storesのような働き
+  //     stores.forEach((store) => {
+  //       // ポップアップの作成
+  //       const popup = new maplibregl.Popup({ offset: 24 }).setHTML(
+  //         `<strong>${store.title}</strong><br/>${store.address_label}`,
+  //       );
+  //       // マーカーの作成
+  //       const marker = new maplibregl.Marker({ color: "#c8442d" })
+  //         .setLngLat([store.longitude, store.latitude])
+  //         .setPopup(popup)
+  //         .addTo(map);
+
+  //       markersRef.current.push(marker);
+  //     });
+  //   }, [stores]);
+
+  const handleShowMap = (store: Store) => {
     const map = mapRef.current; //マップをuseRefから取得
     if (!map) return; // 地図がまだ無ければ何もしない
 
@@ -127,31 +151,27 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
-    // 獲得店舗情報の分マーカーを作成　for store in storesのような働き
-    stores.forEach((store) => {
-      // ポップアップの作成
-      const popup = new maplibregl.Popup({ offset: 24 }).setHTML(
-        `<strong>${store.title}</strong><br/>${store.address_label}`,
-      );
-      // マーカーの作成
-      const marker = new maplibregl.Marker({ color: "#c8442d" })
-        .setLngLat([store.longitude, store.latitude])
-        .setPopup(popup)
-        .addTo(map);
+    // ポップアップの作成
+    const popup = new maplibregl.Popup({ offset: 24 }).setHTML(
+      `<strong>${store.title}</strong><br/>${store.address_label}`,
+    );
+    // マーカーの作成
+    const marker = new maplibregl.Marker({ color: "#c8442d" })
+      .setLngLat([store.longitude, store.latitude])
+      .setPopup(popup)
+      .addTo(map);
 
-      markersRef.current.push(marker);
-    });
-  }, [stores]);
+    markersRef.current.push(marker);
+  };
 
   return (
     <div className="megamap">
       <h1>メガ盛りマップ</h1>
       <table border={1}>
         <tr>
-          <th>酒名</th>
-          <th>価格</th>
-          <th>数量</th>
-          <th>操作</th>
+          <th>店舗名</th>
+          <th>住所</th>
+          <th>表示</th>
         </tr>
         {stores.map((store) => (
           <tr key={store.place_id}>
@@ -160,15 +180,14 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
               <span>{store.title}</span>
             </td>
             <td>
-              <span>円</span>
-            </td>
-            <td>
-              <span></span>
+              <span>{store.address_label}</span>
             </td>
             <td>
               <span>
                 {/* 文字列化して表示 */}
-                <button>カートに追加</button>
+                <button onClick={() => handleShowMap(store)}>
+                  マップに表示
+                </button>
               </span>{" "}
             </td>
           </tr>
