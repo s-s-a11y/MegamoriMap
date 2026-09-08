@@ -47,6 +47,9 @@ async function readErrorMessage(res: Response): Promise<string> {
 
 // 店舗登録用ページ
 export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
+  // カテゴリー格納用配列State
+  const [categories, setCategories] = useState<string[]>([]);
+  // 現在地格納用State
   const [position, setPosition] = useState<Position>({
     latitude: null,
     longitude: null,
@@ -68,6 +71,11 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
         );
       },
     );
+    fetch(
+      "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/ShowStoreCategory",
+    )
+      .then((res) => res.json())
+      .then((data) => setCategories(data));
   }, []);
   // ---- 検索まわりの状態 ----
   const [keyword, setKeyword] = useState("");
@@ -79,6 +87,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
   const [selected, setSelected] = useState<SearchResult | null>(null);
   const [registStatus, setRegistStatus] = useState<Status>("idle");
   const [registError, setRegistError] = useState<string | null>(null);
+  const [category, setCategory] = useState<string>("");
 
   // 「検索」ボタンが押されたときの処理
   const handleSearch = async (e: React.FormEvent) => {
@@ -95,7 +104,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
       const apiUrl =
         "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/SearchStore";
 
-      // ★変更：現在地が取れていればそれを使い、まだなければフォールバック座標を使う
+      // 現在地が取れていればそれを使い、まだなければフォールバック座標を使う
       const origin =
         position.longitude !== null && position.latitude !== null
           ? { longitude: position.longitude, latitude: position.latitude }
@@ -149,6 +158,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
           Address: {
             Label: selected.Address.Label,
           },
+          store_category_name: category,
         }),
       });
 
@@ -167,6 +177,10 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
     }
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setCategory(e.target.value);
+  };
+
   return (
     <div
       style={{
@@ -176,7 +190,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
         fontFamily: "sans-serif",
       }}
     >
-      {/* ★追加：他の画面への移動ボタン */}
+      {/* 他の画面への移動ボタン */}
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         <button onClick={() => onNavigate("map")}>← 地図に戻る</button>
         <button onClick={() => onNavigate("regist-menu")}>
@@ -210,6 +224,15 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
       {searchStatus === "success" && results.length === 0 && (
         <p>該当する店舗が見つかりませんでした。</p>
       )}
+
+      <div>
+        <select value={category} onChange={handleChange}>
+          <option value="">選択してください</option>
+          {categories.map((ctgly) => (
+            <option value={ctgly}>{ctgly}</option>
+          ))}
+        </select>
+      </div>
 
       {/* --- 検索結果一覧（ラジオボタンで1件選ぶ） --- */}
       {results.length > 0 && (
