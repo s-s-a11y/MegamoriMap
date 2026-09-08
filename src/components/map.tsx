@@ -25,6 +25,7 @@ type Store = {
   store_url: string;
   longitude: number;
   latitude: number;
+  store_category_name: string;
 };
 
 // App.tsx から画面切り替え関数を受け取るためのprops
@@ -179,7 +180,7 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
       <table border={1}>
         <tr>
           <th>店舗名</th>
-          <th>住所</th>
+          <th>カテゴリー</th>
           <th>表示</th>
         </tr>
         {stores.map((store) => (
@@ -189,7 +190,7 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
               <span>{store.title}</span>
             </td>
             <td>
-              <span>{store.address_label}</span>
+              <span>{store.store_category_name}</span>
             </td>
             <td>
               <span>
