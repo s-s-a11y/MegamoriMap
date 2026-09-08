@@ -75,7 +75,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
       "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/ShowStoreCategory",
     )
       .then((res) => res.json())
-      .then((data) => setCategories(data));
+      .then((data) => setCategories(data.categories ?? []));
   }, []);
   // ---- 検索まわりの状態 ----
   const [keyword, setKeyword] = useState("");
@@ -226,6 +226,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
       )}
 
       <div>
+        <label>カテゴリー：</label>
         <select value={category} onChange={handleChange}>
           <option value="">選択してください</option>
           {categories.map((ctgly) => (
