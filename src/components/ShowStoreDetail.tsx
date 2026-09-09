@@ -94,54 +94,53 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
   }, [placeId]);
 
   return (
-    <div
-      style={{
-        maxWidth: 480,
-        margin: "0 auto",
-        padding: "24px 16px",
-        fontFamily: "sans-serif",
-      }}
-    >
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+    <div>
+      <nav>
         <button onClick={() => onNavigate("map")}>← 地図に戻る</button>
-      </div>
+      </nav>
 
-      <h1>店舗詳細</h1>
+      <main>
+        <h1>店舗詳細</h1>
 
-      {status === "loading" && <p>読み込み中...</p>}
+        {status === "loading" && <p>読み込み中...</p>}
 
-      {status === "not-found" && <p>指定された店舗が見つかりませんでした。</p>}
+        {status === "not-found" && (
+          <p>指定された店舗が見つかりませんでした。</p>
+        )}
 
-      {status === "error" && <p style={{ color: "red" }}>{errorMessage}</p>}
+        {status === "error" && <p role="alert">{errorMessage}</p>}
 
-      {status === "success" && store && (
-        <dl>
-          <dt style={{ fontWeight: "bold" }}>店舗名</dt>
-          <dd>{store.title}</dd>
+        {status === "success" && store && (
+          <dl>
+            <dt>店舗名</dt>
+            <dd>{store.title}</dd>
 
-          <dt style={{ fontWeight: "bold", marginTop: 12 }}>カテゴリー</dt>
-          <dd>{store.store_category_name || "未設定"}</dd>
+            <dt>カテゴリー</dt>
+            <dd>{store.store_category_name || "未設定"}</dd>
 
-          <dt style={{ fontWeight: "bold", marginTop: 12 }}>住所</dt>
-          <dd>{store.address_label}</dd>
+            <dt>住所</dt>
+            <dd>{store.address_label}</dd>
 
-          <dt style={{ fontWeight: "bold", marginTop: 12 }}>平均価格</dt>
-          <dd>
-            {store.avg_price > 0 ? `¥${store.avg_price.toLocaleString()}` : "-"}
-          </dd>
+            <dt>平均価格</dt>
+            <dd>
+              {store.avg_price > 0
+                ? `¥${store.avg_price.toLocaleString()}`
+                : "-"}
+            </dd>
 
-          {store.store_url && (
-            <>
-              <dt style={{ fontWeight: "bold", marginTop: 12 }}>店舗ページ</dt>
-              <dd>
-                <a href={store.store_url} target="_blank" rel="noreferrer">
-                  {store.store_url}
-                </a>
-              </dd>
-            </>
-          )}
-        </dl>
-      )}
+            {store.store_url && (
+              <>
+                <dt>店舗ページ</dt>
+                <dd>
+                  <a href={store.store_url} target="_blank" rel="noreferrer">
+                    {store.store_url}
+                  </a>
+                </dd>
+              </>
+            )}
+          </dl>
+        )}
+      </main>
     </div>
   );
 }
