@@ -31,8 +31,13 @@ type Store = {
 const ALL_CATEGORIES = "";
 
 // App.tsx から画面切り替え関数を受け取るためのprops
+// ★変更：店舗詳細画面("store-detail")へ遷移する際、
+//   どの店舗の詳細かを伝えるためにplaceIdも渡せるようにした
 interface MapComponentProps {
-  onNavigate: (view: "map" | "regist-store" | "regist-menu") => void;
+  onNavigate: (
+    view: "map" | "regist-store" | "regist-menu" | "store-detail",
+    placeId?: string,
+  ) => void;
 }
 
 export function MapComponent({ onNavigate }: MapComponentProps) {
@@ -212,6 +217,13 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
                 {/* 文字列化して表示 */}
                 <button onClick={() => handleShowMap(store)}>
                   マップに表示
+                </button>{" "}
+                {/* ★追加：店舗詳細画面への移動ボタン。どの店舗かを伝えるため
+                    place_idを第2引数として渡す */}
+                <button
+                  onClick={() => onNavigate("store-detail", store.place_id)}
+                >
+                  詳細を見る
                 </button>
               </span>{" "}
             </td>
