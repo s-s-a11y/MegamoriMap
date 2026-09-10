@@ -106,7 +106,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
   const categoryDialogRef = useRef<HTMLDialogElement | null>(null);
 
   // 「検索」ボタンが押されたときの処理
-  const handleSearch = async (e: React.FormEvent) => {
+  const handleSearch = async (e: React.SubmitEvent) => {
     // ページリロードの防止
     e.preventDefault();
     if (!keyword.trim()) return;

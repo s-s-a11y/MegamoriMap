@@ -5,7 +5,7 @@ import { RegisterStorePage } from "./components/RegistStore";
 import { RegisterMenuPage } from "./components/RegistMenu";
 import { StoreDetailPage } from "./components/ShowStoreDetail";
 
-// 表示する画面の種類。★変更：store-detailを追加
+// 表示する画面の種類。
 export type ViewName = "map" | "regist-store" | "regist-menu" | "store-detail";
 
 function App() {
