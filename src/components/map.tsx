@@ -172,21 +172,23 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
   };
 
   return (
-    <div className="megamap">
-      <h1>メガ盛りマップ</h1>
-      {/* 登録ページへの移動ボタン */}
-      <div>
+    <div>
+      {/* ★変更：他のページと同じくnavに統一 */}
+      <nav>
         <button onClick={() => onNavigate("regist-store")}>
           店舗を登録する
         </button>
         <button onClick={() => onNavigate("regist-menu")}>
           メニューを登録する
         </button>
-      </div>
-      {/* カテゴリー絞り込み */}
-      <div>
+      </nav>
+
+      <main>
+        <h1>メガ盛りマップ</h1>
+
+        {/* カテゴリー絞り込み */}
         <label>
-          カテゴリーで絞り込み：{" "}
+          カテゴリーで絞り込み
           <select value={categoryFilter} onChange={handleCategoryFilterChange}>
             <option value={ALL_CATEGORIES}>すべて</option>
             {categoryOptions.map((name) => (
@@ -196,42 +198,41 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
             ))}
           </select>
         </label>
-      </div>
-      <table border={1}>
-        <tr>
-          <th>店舗名</th>
-          <th>カテゴリー</th>
-          <th>表示</th>
-        </tr>
-        {filteredStores.map((store) => (
-          <tr key={store.place_id}>
-            {/* // 酒IDを基準にリスト表示 */}
-            <td>
-              <span>{store.title}</span>
-            </td>
-            <td>
-              <span>{store.store_category_name}</span>
-            </td>
-            <td>
-              <span>
-                {/* 文字列化して表示 */}
-                <button onClick={() => handleShowMap(store)}>
-                  マップに表示
-                </button>{" "}
-                {/* ★追加：店舗詳細画面への移動ボタン。どの店舗かを伝えるため
-                    place_idを第2引数として渡す */}
-                <button
-                  onClick={() => onNavigate("store-detail", store.place_id)}
-                >
-                  詳細を見る
-                </button>
-              </span>{" "}
-            </td>
-          </tr>
-        ))}
-      </table>
 
-      <div ref={mapContainer} />
+        {/* ★変更：thead/tbodyに分割 */}
+        <table>
+          <thead>
+            <tr>
+              <th>店舗名</th>
+              <th>カテゴリー</th>
+              <th>表示</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredStores.map((store) => (
+              <tr key={store.place_id}>
+                <td>{store.title}</td>
+                <td>{store.store_category_name}</td>
+                <td>
+                  <button onClick={() => handleShowMap(store)}>
+                    マップに表示
+                  </button>{" "}
+                  {/* 店舗詳細画面への移動ボタン。どの店舗かを伝えるため
+                      place_idを第2引数として渡す */}
+                  <button
+                    onClick={() => onNavigate("store-detail", store.place_id)}
+                  >
+                    詳細を見る
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* ★変更：インラインstyleの代わりにidでApp.css側からサイズを当てる */}
+        <div id="map-canvas" ref={mapContainer} />
+      </main>
     </div>
   );
 }
