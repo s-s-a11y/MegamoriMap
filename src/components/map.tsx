@@ -175,7 +175,7 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
     <div className="megamap">
       <h1>メガ盛りマップ</h1>
       {/* 登録ページへの移動ボタン */}
-      <div style={{ gap: 8, marginBottom: 12 }}>
+      <div>
         <button onClick={() => onNavigate("regist-store")}>
           店舗を登録する
         </button>
@@ -184,7 +184,7 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
         </button>
       </div>
       {/* カテゴリー絞り込み */}
-      <div style={{ marginBottom: 12 }}>
+      <div>
         <label>
           カテゴリーで絞り込み：{" "}
           <select value={categoryFilter} onChange={handleCategoryFilterChange}>
@@ -231,7 +231,7 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
         ))}
       </table>
 
-      <div ref={mapContainer} style={{ width: "70%", height: "500px" }} />
+      <div ref={mapContainer} />
     </div>
   );
 }
