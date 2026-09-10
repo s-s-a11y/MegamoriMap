@@ -151,7 +151,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
   };
 
   // 「この店舗を登録する」ボタン(フォームの送信)が押されたときの処理
-  const handleRegist = async (e: React.ChangeEvent) => {
+  const handleRegist = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selected) return;
 
@@ -233,7 +233,9 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
   }, [isCategoryModalOpen]);
 
   // 「登録」ボタンが押されたときの処理（カテゴリー作成API: RegistStoreCategory）
-  const handleCreateCategory = async (e: React.ChangeEvent) => {
+  const handleCreateCategory = async (
+    e: React.SubmitEvent<HTMLFormElement>,
+  ) => {
     e.preventDefault();
     const trimmedName = newCategoryName.trim();
     if (!trimmedName) return;
