@@ -112,7 +112,7 @@ export function RegisterMenuPage({ onNavigate }: RegisterMenuPageProps) {
     Number(price) >= 0;
 
   // 「メニューを登録する」ボタンが押されたときの処理
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.ChangeEvent) => {
     e.preventDefault();
     if (!isFormValid) return;
 

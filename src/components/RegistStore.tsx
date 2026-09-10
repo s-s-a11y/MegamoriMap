@@ -233,7 +233,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
   }, [isCategoryModalOpen]);
 
   // 「登録」ボタンが押されたときの処理（カテゴリー作成API: RegistStoreCategory）
-  const handleCreateCategory = async (e: React.FormEvent) => {
+  const handleCreateCategory = async (e: React.ChangeEvent) => {
     e.preventDefault();
     const trimmedName = newCategoryName.trim();
     if (!trimmedName) return;
