@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に合わせてパスを調整してください
 
 // 店舗検索API（SearchStore）が返す検索結果1件分
 // = Amazon Location Serviceの検索結果をそのまま返している
@@ -89,6 +90,10 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
   const [registError, setRegistError] = useState<string | null>(null);
   const [category, setCategory] = useState<string>("");
 
+  // ---- コメント・画像まわりの状態 ----
+  const [comment, setComment] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
   // ---- カテゴリー作成モーダルまわりの状態 ----
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -97,6 +102,8 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
   const [categoryRegistError, setCategoryRegistError] = useState<string | null>(
     null,
   );
+  // ネイティブ<dialog>要素の開閉をJSから制御するための参照
+  const categoryDialogRef = useRef<HTMLDialogElement | null>(null);
 
   // 「検索」ボタンが押されたときの処理
   const handleSearch = async (e: React.FormEvent) => {
@@ -143,8 +150,9 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
     }
   };
 
-  // 「この店舗を登録する」ボタンが押されたときの処理
-  const handleRegist = async () => {
+  // 「この店舗を登録する」ボタン(フォームの送信)が押されたときの処理
+  const handleRegist = async (e: React.ChangeEvent) => {
+    e.preventDefault();
     if (!selected) return;
 
     setRegistStatus("loading");
@@ -153,6 +161,11 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
     try {
       const apiUrl =
         "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/RegistStore";
+
+      // 画像が選ばれていれば、共有ユーティリティでリサイズ→S3へ直接アップロードする
+      const image_url = imageFile
+        ? await uploadImage(imageFile, "stores")
+        : undefined;
 
       // RegistStore.py の check_input() が読む形に合わせる：
       // PlaceId / Title / Position はそのまま、
@@ -168,6 +181,8 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
             Label: selected.Address.Label,
           },
           store_category_name: category,
+          comment,
+          image_url,
         }),
       });
 
@@ -180,6 +195,8 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
       }
 
       setRegistStatus("success");
+      setComment("");
+      setImageFile(null);
     } catch (err) {
       setRegistError(err instanceof Error ? err.message : "登録に失敗しました");
       setRegistStatus("error");
@@ -201,6 +218,19 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
   const closeCategoryModal = () => {
     setIsCategoryModalOpen(false);
   };
+
+  // isCategoryModalOpenの変化に合わせて<dialog>のshowModal()/close()を呼ぶ。
+  // <dialog>はopen属性だけを付けても背景の暗転(::backdrop)やEscでの
+  // クローズが効かないため、正しいモーダル動作にはJSからの呼び出しが必要。
+  useEffect(() => {
+    const dialog = categoryDialogRef.current;
+    if (!dialog) return;
+    if (isCategoryModalOpen && !dialog.open) {
+      dialog.showModal();
+    } else if (!isCategoryModalOpen && dialog.open) {
+      dialog.close();
+    }
+  }, [isCategoryModalOpen]);
 
   // 「登録」ボタンが押されたときの処理（カテゴリー作成API: RegistStoreCategory）
   const handleCreateCategory = async (e: React.FormEvent) => {
@@ -244,94 +274,61 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
   };
 
   return (
-    <div
-      style={{
-        maxWidth: 480,
-        margin: "0 auto",
-        padding: "24px 16px",
-        fontFamily: "sans-serif",
-      }}
-    >
+    <div>
       {/* 他の画面への移動ボタン */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+      <nav>
         <button onClick={() => onNavigate("map")}>← 地図に戻る</button>
         <button onClick={() => onNavigate("regist-menu")}>
           メニュー登録へ
         </button>
-      </div>
+      </nav>
 
-      <h1>店舗登録</h1>
+      <main>
+        <h1>店舗登録</h1>
 
-      {/* --- 検索フォーム --- */}
-      <form
-        onSubmit={handleSearch}
-        style={{ display: "flex", gap: 8, marginBottom: 16 }}
-      >
-        <input
-          type="text"
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          placeholder="店名やキーワードで検索（例: つけ麺 池袋）"
-          style={{ flex: 1, padding: "8px 12px" }}
-        />
-        <button type="submit" disabled={searchStatus === "loading"}>
-          {searchStatus === "loading" ? "検索中..." : "検索"}
-        </button>
-      </form>
+        {/* --- 検索フォーム --- */}
+        <search>
+          <form onSubmit={handleSearch}>
+            <input
+              type="text"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="店名やキーワードで検索（例: つけ麺 池袋）"
+            />
+            <button type="submit" disabled={searchStatus === "loading"}>
+              {searchStatus === "loading" ? "検索中..." : "検索"}
+            </button>
+          </form>
+        </search>
 
-      {searchStatus === "error" && (
-        <p style={{ color: "red" }}>{searchError}</p>
-      )}
+        {searchStatus === "error" && <p role="alert">{searchError}</p>}
 
-      {searchStatus === "success" && results.length === 0 && (
-        <p>該当する店舗が見つかりませんでした。</p>
-      )}
+        {searchStatus === "success" && results.length === 0 && (
+          <p>該当する店舗が見つかりませんでした。</p>
+        )}
 
-      {/* --- カテゴリー選択＋新規作成ボタン --- */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          marginBottom: 16,
-        }}
-      >
-        <label>カテゴリー：</label>
-        <select value={category} onChange={handleChange}>
-          <option value="">選択してください</option>
-          {categories.map((ctgly) => (
-            <option key={ctgly} value={ctgly}>
-              {ctgly}
-            </option>
-          ))}
-        </select>
-        <button type="button" onClick={openCategoryModal}>
-          カテゴリを作成する
-        </button>
-      </div>
+        {/* --- カテゴリー選択＋新規作成ボタン --- */}
+        <fieldset>
+          <legend>カテゴリー</legend>
+          <select value={category} onChange={handleChange}>
+            <option value="">選択してください</option>
+            {categories.map((ctgly) => (
+              <option key={ctgly} value={ctgly}>
+                {ctgly}
+              </option>
+            ))}
+          </select>
+          <button type="button" onClick={openCategoryModal}>
+            カテゴリを作成する
+          </button>
+        </fieldset>
 
-      {/* --- 検索結果一覧（ラジオボタンで1件選ぶ） --- */}
-      {results.length > 0 && (
-        <ul style={{ listStyle: "none", padding: 0, marginBottom: 16 }}>
-          {results.map((item) => (
-            <li
-              key={item.PlaceId}
-              style={{
-                border: "1px solid #ccc",
-                borderRadius: 8,
-                padding: 10,
-                marginBottom: 8,
-              }}
-            >
-              <label
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 4,
-                  cursor: "pointer",
-                }}
-              >
-                <span>
+        {/* --- 検索結果一覧（ラジオボタンで1件選ぶ） --- */}
+        {results.length > 0 && (
+          <ul>
+            {results.map((item) => (
+              <li key={item.PlaceId}>
+                <label>
                   <input
                     type="radio"
                     name="selected-store"
@@ -339,104 +336,94 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
                     onChange={() => setSelected(item)}
                   />{" "}
                   <strong>{item.Title}</strong>
-                </span>
-                <span style={{ fontSize: 12, color: "#666" }}>
-                  {item.Address.Label}
-                </span>
-              </label>
-            </li>
-          ))}
-        </ul>
-      )}
+                  <br />
+                  <small>{item.Address.Label}</small>
+                </label>
+              </li>
+            ))}
+          </ul>
+        )}
 
-      {/* --- 選択中の店舗の確認・登録ボタン --- */}
-      {selected && (
-        <div style={{ marginBottom: 16 }}>
-          <p>
-            「<strong>{selected.Title}</strong>」を登録します。よろしいですか？
-          </p>
-          <button onClick={handleRegist} disabled={registStatus === "loading"}>
-            {registStatus === "loading" ? "登録中..." : "この店舗を登録する"}
-          </button>
-        </div>
-      )}
+        {/* --- 選択中の店舗の確認・コメント・画像・登録ボタン --- */}
+        {selected && (
+          <form onSubmit={handleRegist}>
+            <p>
+              「<strong>{selected.Title}</strong>
+              」を登録します。よろしいですか？
+            </p>
 
-      {registStatus === "success" && (
-        <p style={{ color: "green" }}>店舗を登録しました。</p>
-      )}
-      {registStatus === "error" && (
-        <p style={{ color: "red" }}>{registError}</p>
-      )}
+            <label>
+              コメント（任意）
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                rows={3}
+                placeholder="この店舗の特徴やおすすめポイントなど"
+              />
+            </label>
+
+            <label>
+              写真（任意）
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+              />
+            </label>
+
+            <button type="submit" disabled={registStatus === "loading"}>
+              {registStatus === "loading" ? "登録中..." : "この店舗を登録する"}
+            </button>
+          </form>
+        )}
+
+        {registStatus === "success" && (
+          <p role="status">店舗を登録しました。</p>
+        )}
+        {registStatus === "error" && <p role="alert">{registError}</p>}
+      </main>
 
       {/* --- カテゴリー作成モーダル --- */}
-      {isCategoryModalOpen && (
-        <div
-          // オーバーレイ：クリックしたら閉じる
-          onClick={closeCategoryModal}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.4)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 100,
-          }}
-        >
-          <div
-            // モーダル本体：クリックしてもオーバーレイまで伝播させず閉じないようにする
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: "#fff",
-              borderRadius: 8,
-              padding: 24,
-              width: "90%",
-              maxWidth: 360,
-            }}
-          >
-            <h2 style={{ marginTop: 0 }}>新しいカテゴリーを作成</h2>
+      <dialog
+        ref={categoryDialogRef}
+        onClose={closeCategoryModal}
+        onClick={(e) => {
+          // ダイアログの外周(背景)をクリックした時だけ閉じる。
+          // 内側の要素をクリックした場合は e.target がその子要素になるため、
+          // e.currentTarget(dialog自身)と一致する時だけ閉じる判定にしている。
+          if (e.target === e.currentTarget) closeCategoryModal();
+        }}
+      >
+        <h2>新しいカテゴリーを作成</h2>
 
-            <form onSubmit={handleCreateCategory}>
-              <input
-                type="text"
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                placeholder="カテゴリー名（例: つけ麺）"
-                autoFocus
-                style={{
-                  width: "100%",
-                  padding: "8px 12px",
-                  marginBottom: 12,
-                  boxSizing: "border-box",
-                }}
-              />
+        <form onSubmit={handleCreateCategory}>
+          <input
+            type="text"
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            placeholder="カテゴリー名（例: つけ麺）"
+            autoFocus
+          />
 
-              {categoryRegistStatus === "error" && (
-                <p style={{ color: "red", marginTop: 0 }}>
-                  {categoryRegistError}
-                </p>
-              )}
+          {categoryRegistStatus === "error" && (
+            <p role="alert">{categoryRegistError}</p>
+          )}
 
-              <div
-                style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
-              >
-                <button type="button" onClick={closeCategoryModal}>
-                  キャンセル
-                </button>
-                <button
-                  type="submit"
-                  disabled={
-                    categoryRegistStatus === "loading" ||
-                    !newCategoryName.trim()
-                  }
-                >
-                  {categoryRegistStatus === "loading" ? "登録中..." : "登録"}
-                </button>
-              </div>
-            </form>
+          <div>
+            <button type="button" onClick={closeCategoryModal}>
+              キャンセル
+            </button>
+            <button
+              type="submit"
+              disabled={
+                categoryRegistStatus === "loading" || !newCategoryName.trim()
+              }
+            >
+              {categoryRegistStatus === "loading" ? "登録中..." : "登録"}
+            </button>
           </div>
-        </div>
-      )}
+        </form>
+      </dialog>
     </div>
   );
 }

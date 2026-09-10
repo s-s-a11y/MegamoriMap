@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に合わせてパスを調整してください
 
 // ------------------------------------------------------------
 // 型定義（このファイル専用。他のファイルには依存しない）
@@ -56,6 +57,7 @@ export function RegisterMenuPage({ onNavigate }: RegisterMenuPageProps) {
   const [menuName, setMenuName] = useState("");
   const [price, setPrice] = useState("");
   const [memo, setMemo] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   // ---- 登録処理の状態 ----
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>("idle");
@@ -121,6 +123,11 @@ export function RegisterMenuPage({ onNavigate }: RegisterMenuPageProps) {
       const apiUrl =
         "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/RegistMenu";
 
+      // 画像が選ばれていれば、共有ユーティリティでリサイズ→S3へ直接アップロードする
+      const image_url = imageFile
+        ? await uploadImage(imageFile, "menus")
+        : undefined;
+
       const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -129,6 +136,7 @@ export function RegisterMenuPage({ onNavigate }: RegisterMenuPageProps) {
           place_id: placeId,
           memo: memo, // 任意項目。空文字のままでもRegistMenu.py側で問題ない
           price: Number(price),
+          image_url,
         }),
       });
 
@@ -141,6 +149,7 @@ export function RegisterMenuPage({ onNavigate }: RegisterMenuPageProps) {
       setMenuName("");
       setPrice("");
       setMemo("");
+      setImageFile(null);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "登録に失敗しました");
       setSubmitStatus("error");
@@ -149,110 +158,113 @@ export function RegisterMenuPage({ onNavigate }: RegisterMenuPageProps) {
 
   // ★追加：どの状態でも表示する、他の画面への移動ボタン
   const navButtons = (
-    <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+    <nav>
       <button onClick={() => onNavigate("map")}>← 地図に戻る</button>
       <button onClick={() => onNavigate("regist-store")}>店舗登録へ</button>
-    </div>
+    </nav>
   );
 
   if (loadStatus === "loading") {
     return (
-      <div style={{ maxWidth: 480, margin: "0 auto", padding: "24px 16px" }}>
+      <div>
         {navButtons}
-        <p>店舗一覧を読み込み中...</p>
+        <main>
+          <p>店舗一覧を読み込み中...</p>
+        </main>
       </div>
     );
   }
 
   if (loadStatus === "error") {
     return (
-      <div style={{ maxWidth: 480, margin: "0 auto", padding: "24px 16px" }}>
+      <div>
         {navButtons}
-        <p style={{ color: "red" }}>{loadError}</p>
+        <main>
+          <p role="alert">{loadError}</p>
+        </main>
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        maxWidth: 480,
-        margin: "0 auto",
-        padding: "24px 16px",
-        fontFamily: "sans-serif",
-      }}
-    >
+    <div>
       {navButtons}
 
-      <h1>メニュー登録</h1>
+      <main>
+        <h1>メニュー登録</h1>
 
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: "flex", flexDirection: "column", gap: 16 }}
-      >
-        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          店舗
-          <select
-            value={placeId}
-            onChange={(e) => setPlaceId(e.target.value)}
-            required
-          >
-            <option value="" disabled>
-              店舗を選択してください
-            </option>
-            {stores.map((store) => (
-              <option key={store.place_id} value={store.place_id}>
-                {store.title}（{store.address_label}）
+        <form onSubmit={handleSubmit}>
+          <fieldset>
+            <legend>店舗</legend>
+            <select
+              value={placeId}
+              onChange={(e) => setPlaceId(e.target.value)}
+              required
+            >
+              <option value="" disabled>
+                店舗を選択してください
               </option>
-            ))}
-          </select>
-        </label>
+              {stores.map((store) => (
+                <option key={store.place_id} value={store.place_id}>
+                  {store.title}（{store.address_label}）
+                </option>
+              ))}
+            </select>
+          </fieldset>
 
-        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          メニュー名（{MENU_NAME_MAX_LENGTH}文字以内）
-          <input
-            type="text"
-            value={menuName}
-            maxLength={MENU_NAME_MAX_LENGTH}
-            onChange={(e) => setMenuName(e.target.value)}
-            required
-          />
-        </label>
+          <label>
+            メニュー名（{MENU_NAME_MAX_LENGTH}文字以内）
+            <input
+              type="text"
+              value={menuName}
+              maxLength={MENU_NAME_MAX_LENGTH}
+              onChange={(e) => setMenuName(e.target.value)}
+              required
+            />
+          </label>
 
-        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          価格（円）
-          <input
-            type="number"
-            value={price}
-            min={0}
-            onChange={(e) => setPrice(e.target.value)}
-            required
-          />
-        </label>
+          <label>
+            価格（円）
+            <input
+              type="number"
+              value={price}
+              min={0}
+              onChange={(e) => setPrice(e.target.value)}
+              required
+            />
+          </label>
 
-        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          メモ（重量など特盛を示す情報。任意）
-          <textarea
-            value={memo}
-            onChange={(e) => setMemo(e.target.value)}
-            rows={3}
-          />
-        </label>
+          <label>
+            メモ（重量など特盛を示す情報。任意）
+            <textarea
+              value={memo}
+              onChange={(e) => setMemo(e.target.value)}
+              rows={3}
+            />
+          </label>
 
-        <button
-          type="submit"
-          disabled={!isFormValid || submitStatus === "loading"}
-        >
-          {submitStatus === "loading" ? "登録中..." : "メニューを登録する"}
-        </button>
-      </form>
+          <label>
+            写真（任意）
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+            />
+          </label>
 
-      {submitStatus === "success" && (
-        <p style={{ color: "green" }}>メニューを登録しました。</p>
-      )}
-      {submitStatus === "error" && (
-        <p style={{ color: "red" }}>{submitError}</p>
-      )}
+          <button
+            type="submit"
+            disabled={!isFormValid || submitStatus === "loading"}
+          >
+            {submitStatus === "loading" ? "登録中..." : "メニューを登録する"}
+          </button>
+        </form>
+
+        {submitStatus === "success" && (
+          <p role="status">メニューを登録しました。</p>
+        )}
+        {submitStatus === "error" && <p role="alert">{submitError}</p>}
+      </main>
     </div>
   );
 }

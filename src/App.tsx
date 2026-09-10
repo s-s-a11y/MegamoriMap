@@ -1,6 +1,6 @@
 import { useState } from "react";
 import "./App.css";
-import { MapComponent } from "./components/map";
+import { MapComponent } from "./components/Map";
 // ↓ 実際の配置場所に合わせてパスを調整してください
 import { RegisterStorePage } from "./components/RegistStore";
 import { RegisterMenuPage } from "./components/RegistMenu";
