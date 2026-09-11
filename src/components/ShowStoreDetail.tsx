@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { formatBudgetBand } from "../utils/FormatPrice"; // 実際の配置場所に合わせてパスを調整してください
 
 // ShowStoreDetail Lambdaが返す、1店舗分の詳細情報
 // (ShowStoreDetail.pyのformat_store()の出力に合わせている)
@@ -187,12 +188,8 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
               <dt>住所</dt>
               <dd>{store.address_label}</dd>
 
-              <dt>平均価格</dt>
-              <dd>
-                {store.avg_price > 0
-                  ? `¥${store.avg_price.toLocaleString()}`
-                  : "-"}
-              </dd>
+              <dt>予算帯</dt>
+              <dd>{formatBudgetBand(store.avg_price)}</dd>
 
               {store.comment && (
                 <>

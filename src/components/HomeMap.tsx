@@ -7,6 +7,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 // (プレーンな ?url だとworkerが依存している maplibre-gl-shared.mjs が
 //  一緒にバンドルされず、workerが読み込み時に失敗する)
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
+import { formatBudgetBand } from "../utils/FormatPrice"; // 実際の配置場所に合わせてパスを調整してください
 
 // アプリ起動時に一度だけ、workerの場所をMapLibreに教える
 maplibregl.setWorkerUrl(workerUrl);
@@ -205,6 +206,7 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
             <tr>
               <th>店舗名</th>
               <th>カテゴリー</th>
+              <th>予算帯</th>
               <th>表示</th>
             </tr>
           </thead>
@@ -213,6 +215,7 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
               <tr key={store.place_id}>
                 <td>{store.title}</td>
                 <td>{store.store_category_name}</td>
+                <td>{formatBudgetBand(store.avg_price)}</td>
                 <td>
                   <button onClick={() => handleShowMap(store)}>
                     マップに表示
