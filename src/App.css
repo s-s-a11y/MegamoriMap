@@ -46,7 +46,7 @@ body {
   ここだけは例外的にスタイルを当てている。
 */
 #root {
-  width: 100%;
+  max-width: 720px;
   margin: 0 auto;
   min-height: 100dvh;
   padding: 32px 24px 64px;
@@ -106,6 +106,23 @@ small {
 
 strong {
   font-weight: 700;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+li img {
+  margin-bottom: 8px;
+}
+
+section {
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
 }
 
 /* ---- ナビゲーション（画面遷移ボタンの並び） ---- */
