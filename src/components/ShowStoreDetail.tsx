@@ -175,12 +175,16 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     mapRef.current = map;
 
     map.addControl(new maplibregl.NavigationControl(), "top-right");
-    map.addControl(
-      new maplibregl.GeolocateControl({
-        positionOptions: { enableHighAccuracy: true },
-        trackUserLocation: true,
-      }),
-    );
+
+    const geolocateControl = new maplibregl.GeolocateControl({
+      positionOptions: { enableHighAccuracy: true },
+      trackUserLocation: true,
+    });
+    map.addControl(geolocateControl);
+
+    map.on("load", () => {
+      geolocateControl.trigger();
+    });
 
     // 店舗の位置にマーカーを立てる。storeは既に手元にあるデータなので
     // setState直後の値のズレを心配する必要が無い。
