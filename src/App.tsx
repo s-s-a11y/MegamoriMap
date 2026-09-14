@@ -1,6 +1,6 @@
 import { useState } from "react";
 import "./App.css";
-import { MapComponent } from "./components/HomeMap";
+import { MapComponent } from "./components/Home";
 import { RegisterStorePage } from "./components/RegistStore";
 import { RegisterMenuPage } from "./components/RegistMenu";
 import { StoreDetailPage } from "./components/ShowStoreDetail";
