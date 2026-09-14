@@ -1,0 +1,89 @@
+/*
+  Home.tsx 専用のスタイル。
+  App.css（共通・タグのみ）では表現できない、このページ固有の
+  カードグリッド・ページングだけをここに書く。
+*/
+
+/* Home画面の<main>だけ、共通の640px幅制限を解除して画面幅いっぱいに使う */
+.home-main {
+  max-width: none;
+}
+
+/*
+  カードを並べるグリッド。列数は固定せず、auto-fillとminmaxで
+  画面幅に応じて自動的に決まるようにしている。
+  - 1枚あたり最低380px確保できる列数だけ並べる
+  - 余った幅は1frで均等に伸ばす
+  - 目安：スマホ(〜450px)は1列、タブレットは2〜3列、
+    PCの広い画面(1800px前後)で4列前後になる
+*/
+.store-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 24px;
+}
+
+.store-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0; /* App.css側のliのpaddingを打ち消し、画像を端まで見せる */
+}
+
+.store-card__image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  margin: 0;
+  border-radius: 0; /* App.css側のimgの角丸を打ち消す(カード自体が角丸のため) */
+}
+
+.store-card__placeholder {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.store-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px 16px;
+  flex: 1;
+}
+
+.store-card__name {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.store-card__category,
+.store-card__price {
+  font-size: 13px;
+  color: rgba(42, 23, 16, 0.75);
+}
+
+.store-card__button {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+/* ページング */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.pagination__status {
+  font-size: 14px;
+  min-width: 4em;
+  text-align: center;
+}

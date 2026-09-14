@@ -4,6 +4,8 @@
   className への付与は行わず、共通タグ（と一部のARIA role属性）だけに
   スタイルを当てている。ページごとの見た目の違いは、後でクラスを
   追加していく前提のため、意図的にここでは作り込んでいない。
+  ※例外：Home画面のカードグリッドのみ、コンポーネント側のCSS
+  （Home.css）で最小限のクラスを使っている。
 
   使用フォント（index.htmlに以下を追加してください）:
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -44,12 +46,14 @@ body {
   #root は Vite が index.html に用意する、アプリ全体のマウント先。
   classNameではなくidだが、ページ全体の紙面(横幅・余白)を作るために
   ここだけは例外的にスタイルを当てている。
+  ★変更：固定のmax-widthをやめ、スマホ・PCどちらでも画面幅いっぱいに
+  広がるようにした。読みやすさの制御(フォーム等を間延びさせない)は
+  下のmainタグ側で個別に行う。
 */
 #root {
-  max-width: 720px;
-  margin: 0 auto;
+  width: 100%;
   min-height: 100dvh;
-  padding: 32px 24px 64px;
+  padding: clamp(16px, 4vw, 32px) clamp(16px, 4vw, 24px) 64px;
   background: var(--paper);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
 }
@@ -135,11 +139,18 @@ nav {
   border-bottom: 1px solid var(--line);
 }
 
-/* ---- メインコンテンツ ---- */
+/*
+  ---- メインコンテンツ ----
+  ★変更：基本は640px幅で中央寄せにする(フォーム等が間延びしないため)。
+  Home画面だけは home-main クラスで上書きして広く使う(Home.css参照)。
+*/
 main {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
 }
 
 /* ---- 検索欄(<search>ランドマーク) ---- */

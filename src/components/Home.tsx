@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatBudgetBand } from "../utils/FormatPrice"; // 実際の配置場所に合わせてパスを調整してください
+import "./Home.css";
 
 // 店舗情報格納用typeの定義
 type Store = {
@@ -11,27 +12,30 @@ type Store = {
   longitude: number;
   latitude: number;
   store_category_name: string;
+  image_url: string; // ★カード表示用に追加。ShowMegaMap.py側の対応が必要(本文参照)
 };
 
 const ALL_CATEGORIES = "";
+const PAGE_SIZE = 8; // 縦2 × 横4 = 1ページ8件
 
 // ShowMegaMap は longitude/latitude が必須入力だが、実装上は絞り込みに
-// 使われていない(地図表示自体をこのページから無くしたため、現在地取得は
-// もう不要になった)。固定値を送っておく。
+// 使われていないため、固定値を送っておく。
 const DEFAULT_ORIGIN = { longitude: 139.7109, latitude: 35.7295 };
 
 // App.tsx から画面切り替え関数を受け取るためのprops
-interface MapComponentProps {
+interface HomePageProps {
   onNavigate: (
     view: "map" | "regist-store" | "regist-menu" | "store-detail",
     placeId?: string,
   ) => void;
 }
 
-export function MapComponent({ onNavigate }: MapComponentProps) {
+export function HomePage({ onNavigate }: HomePageProps) {
   //   店舗情報格納用State
   const [stores, setStores] = useState<Store[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>(ALL_CATEGORIES);
+  // ★追加：ページング用State(何ページ目を表示中か。1始まり)
+  const [currentPage, setCurrentPage] = useState(1);
 
   //   画面表示時に一度だけ店舗情報を取得する
   useEffect(() => {
@@ -46,12 +50,10 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
       },
     )
       .then((res) => res.json())
-      // 獲得データstores[]の中身を店舗情報として取得
       .then((data) => setStores(data.stores ?? []));
   }, []);
 
-  // storesの中に実際に登場するカテゴリー名だけを重複無しで抽出する。
-  // ShowStoreCategoryを別途呼ばなくても、今表示している店舗データだけから作れる。
+  // storesの中に実際に登場するカテゴリー名だけを重複無しで抽出する
   const categoryOptions = useMemo(() => {
     const names = stores
       .map((store) => store.store_category_name)
@@ -67,10 +69,32 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
     );
   }, [stores, categoryFilter]);
 
+  // ★追加：絞り込み条件が変わったら1ページ目に戻す
+  // (直前のページ番号のままだと、絞り込んだ結果ページが存在しなくなることがあるため)
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categoryFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredStores.length / PAGE_SIZE));
+
+  // ★追加：現在のページ番号分だけ切り出す
+  const pagedStores = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredStores.slice(start, start + PAGE_SIZE);
+  }, [filteredStores, currentPage]);
+
   const handleCategoryFilterChange = (
     e: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     setCategoryFilter(e.target.value);
+  };
+
+  const goToPrevPage = () => {
+    setCurrentPage((page) => Math.max(1, page - 1));
+  };
+
+  const goToNextPage = () => {
+    setCurrentPage((page) => Math.min(totalPages, page + 1));
   };
 
   return (
@@ -84,7 +108,8 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
         </button>
       </nav>
 
-      <main>
+      {/* ★変更：home-mainクラスを付けて、この画面だけ幅の制限を広げる */}
+      <main className="home-main">
         <h1>メガ盛りマップ</h1>
 
         {/* カテゴリー絞り込み */}
@@ -100,34 +125,51 @@ export function MapComponent({ onNavigate }: MapComponentProps) {
           </select>
         </label>
 
-        <table>
-          <thead>
-            <tr>
-              <th>店舗名</th>
-              <th>カテゴリー</th>
-              <th>予算帯</th>
-              <th>詳細</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredStores.map((store) => (
-              <tr key={store.place_id}>
-                <td>{store.title}</td>
-                <td>{store.store_category_name}</td>
-                <td>{formatBudgetBand(store.avg_price)}</td>
-                <td>
-                  {/* 地図はStoreDetailPage側に移したため、ここは
-                      詳細画面への遷移ボタンのみにした */}
-                  <button
-                    onClick={() => onNavigate("store-detail", store.place_id)}
-                  >
-                    詳細を見る
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {/* ★変更：テーブルの代わりにカードグリッドで表示 */}
+        <ul className="store-grid">
+          {pagedStores.map((store) => (
+            <li key={store.place_id} className="store-card">
+              {store.image_url ? (
+                <img
+                  className="store-card__image"
+                  src={store.image_url}
+                  alt={store.title}
+                />
+              ) : (
+                <div className="store-card__placeholder">写真なし</div>
+              )}
+
+              <div className="store-card__body">
+                <span className="store-card__name">{store.title}</span>
+                <span className="store-card__category">
+                  {store.store_category_name}
+                </span>
+                <span className="store-card__price">
+                  {formatBudgetBand(store.avg_price)}
+                </span>
+                <button
+                  className="store-card__button"
+                  onClick={() => onNavigate("store-detail", store.place_id)}
+                >
+                  詳細を見る
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        {/* ★追加：ページング */}
+        <div className="pagination">
+          <button onClick={goToPrevPage} disabled={currentPage <= 1}>
+            ← 前へ
+          </button>
+          <span className="pagination__status">
+            {currentPage} / {totalPages}
+          </span>
+          <button onClick={goToNextPage} disabled={currentPage >= totalPages}>
+            次へ →
+          </button>
+        </div>
       </main>
     </div>
   );

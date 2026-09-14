@@ -1,6 +1,6 @@
 import { useState } from "react";
 import "./App.css";
-import { MapComponent } from "./components/Home";
+import { HomePage } from "./components/Home";
 import { RegisterStorePage } from "./components/RegistStore";
 import { RegisterMenuPage } from "./components/RegistMenu";
 import { StoreDetailPage } from "./components/ShowStoreDetail";
@@ -11,12 +11,11 @@ export type ViewName = "map" | "regist-store" | "regist-menu" | "store-detail";
 function App() {
   // 表示するコンポーネントを決定するState
   const [currentView, setCurrentView] = useState<ViewName>("map");
-  // ★追加：店舗詳細画面でどのplace_idを表示するかを保持するState
+  // 店舗詳細画面でどのplace_idを表示するかを保持するState
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
 
-  // ★変更：画面遷移用の関数。store-detailへ遷移する場合は
+  // 画面遷移用の関数。store-detailへ遷移する場合は
   // 第2引数にplace_idを渡すことで、どの店舗を表示するか一緒に伝える。
-  // (store-detail以外へ遷移する時はplaceIdは省略でよい)
   const handleNavigate = (view: ViewName, placeId?: string) => {
     if (placeId) {
       setSelectedPlaceId(placeId);
@@ -27,17 +26,18 @@ function App() {
   // 描画するコンポーネントを決定する処理
   const renderView = () => {
     switch (currentView) {
+      // ★変更：MapComponent(旧HomeMap) → HomePage(Home) に改名
       case "map":
-        return <MapComponent onNavigate={handleNavigate} />;
+        return <HomePage onNavigate={handleNavigate} />;
       case "regist-store":
         return <RegisterStorePage onNavigate={handleNavigate} />;
       case "regist-menu":
         return <RegisterMenuPage onNavigate={handleNavigate} />;
       case "store-detail":
-        // 通常はMap.tsxから必ずplaceId付きで遷移してくるが、
-        // 型上はnullの可能性があるため、その場合は地図に戻す安全策を入れておく
+        // 通常はHome.tsxから必ずplaceId付きで遷移してくるが、
+        // 型上はnullの可能性があるため、その場合はHomeに戻す安全策を入れておく
         if (!selectedPlaceId) {
-          return <MapComponent onNavigate={handleNavigate} />;
+          return <HomePage onNavigate={handleNavigate} />;
         }
         return (
           <StoreDetailPage
