@@ -55,8 +55,9 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
     latitude: null,
     longitude: null,
   });
-
+  // 画面表示と同時に現在地をブラウザから、店舗のカテゴリをAWSから取得する
   useEffect(() => {
+    // 現在地の取得
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setPosition({
@@ -72,6 +73,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
         );
       },
     );
+    // 店舗のカテゴリを取得、データがなければから配列として扱う
     fetch(
       "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/ShowStoreCategory",
     )
