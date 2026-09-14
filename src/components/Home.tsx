@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatBudgetBand } from "../utils/FormatPrice"; // 実際の配置場所に合わせてパスを調整してください
-import "./Home.css";
+import "../css_components/Home.css";
 
 // 店舗情報格納用typeの定義
 type Store = {
