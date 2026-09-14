@@ -1,5 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { formatBudgetBand } from "../utils/FormatPrice"; // 実際の配置場所に合わせてパスを調整してください
+// maplibre-glをインポート(V6対応版)
+import * as maplibregl from "maplibre-gl";
+// 地図表示の際のstylesheetを読み込み
+import "maplibre-gl/dist/maplibre-gl.css";
+// worker本体をViteに正しくバンドルさせて、そのURLを取得する
+// (プレーンな ?url だとworkerが依存している maplibre-gl-shared.mjs が
+//  一緒にバンドルされず、workerが読み込み時に失敗する)
+import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
+
+// アプリ起動時に一度だけ、workerの場所をMapLibreに教える
+maplibregl.setWorkerUrl(workerUrl);
+
+// 座標格納用typeの定義
+interface Position {
+  latitude: number | null;
+  longitude: number | null;
+}
 
 // ShowStoreDetail Lambdaが返す、1店舗分の詳細情報
 // (ShowStoreDetail.pyのformat_store()の出力に合わせている)
@@ -54,6 +71,24 @@ async function readErrorMessage(res: Response): Promise<string> {
 }
 
 export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
+  // マップ表示用のDOMを取得する。
+  const mapContainer = useRef<HTMLDivElement | null>(null);
+  //   マップ保存用UseRef
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  //   マーカーデータ保存用useRef
+  const markersRef = useRef<maplibregl.Marker[]>([]);
+
+  // 環境変数から値を取得する
+  const apiKey = import.meta.env.VITE_MAP_API_KEY;
+  const mapName = import.meta.env.VITE_MAP_NAME;
+  const region = import.meta.env.VITE_AWS_REGION;
+
+  // 現在地取得用State
+  const [position, setPosition] = useState<Position>({
+    latitude: null,
+    longitude: null,
+  });
+
   // ---- 店舗情報まわりの状態 ----
   const [store, setStore] = useState<StoreDetail | null>(null);
   const [storeStatus, setStoreStatus] = useState<StoreStatus>("loading");
@@ -65,6 +100,54 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
   const [menus, setMenus] = useState<Menu[]>([]);
   const [menuStatus, setMenuStatus] = useState<MenuStatus>("loading");
   const [menuErrorMessage, setMenuErrorMessage] = useState<string | null>(null);
+
+  //   一番最初に行うuseEffect　現在地座標と店舗情報の獲得を行う
+  useEffect(() => {
+    // 現在地座標を獲得
+    navigator.geolocation.getCurrentPosition((pos) => {
+      setPosition({
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+      });
+    });
+  }, []);
+
+  //   現在地情報獲得とともにAmazone Location ServiceのMapsAPIをたたき地図データを取得、描画する
+  useEffect(() => {
+    if (!mapContainer.current) return;
+    // 現在地情報がなければキャンセル
+    if (position.latitude === null || position.longitude === null) return;
+    // 接続先URLの成型：環境変数から取得した値をもとにして作成
+    const styleUrl = `https://maps.geo.${region}.amazonaws.com/maps/v0/maps/${mapName}/style-descriptor?key=${apiKey}`;
+    // 作成する地図の設定項目を書き込んで実際にAPIからデータを取得する
+    const map = new maplibregl.Map({
+      container: mapContainer.current,
+      style: styleUrl,
+      //   地図の中心とする座標
+      center: [position.longitude, position.latitude],
+      //   地図の縮尺レベルを定める
+      zoom: 16,
+    });
+    // マップをuseRefに格納(マーカー表示処理に使用するため)
+    mapRef.current = map;
+    // 拡大/縮小ボタンの追加
+    map.addControl(new maplibregl.NavigationControl(), "top-right");
+    // 地図にユーザーの位置情報を表示するコントロールを追加
+    map.addControl(
+      new maplibregl.GeolocateControl({
+        positionOptions: {
+          enableHighAccuracy: true,
+        },
+        trackUserLocation: true,
+      }),
+    );
+
+    // コンポーネントが描画されなくなると同時にデータを消去する処理(メモリリーク対策)
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, [position]);
 
   // 店舗情報の取得
   useEffect(() => {
@@ -97,6 +180,21 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
         const data = (await res.json()) as StoreDetail;
         setStore(data);
         setStoreStatus("success");
+
+        const map = mapRef.current; //マップをuseRefから取得
+        if (!map) return; // 地図がまだ無ければ何もしない
+
+        // 前回分のマーカーを消してから作り直す（重複防止）
+        markersRef.current.forEach((marker) => marker.remove());
+        markersRef.current = [];
+        // マーカーの作成
+        if (store) {
+          const marker = new maplibregl.Marker({ color: "#c8442d" })
+            .setLngLat([store.longitude, store.latitude])
+            .addTo(map);
+
+          markersRef.current.push(marker);
+        }
       })
       .catch((err) => {
         if (cancelled) return;
@@ -211,6 +309,8 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
             </dl>
           </>
         )}
+
+        <div id="map-canvas" ref={mapContainer} />
 
         {/* --- メニュー一覧 --- */}
         {storeStatus === "success" && (
