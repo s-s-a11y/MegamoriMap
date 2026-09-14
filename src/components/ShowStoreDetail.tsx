@@ -5,8 +5,6 @@ import * as maplibregl from "maplibre-gl";
 // 地図表示の際のstylesheetを読み込み
 import "maplibre-gl/dist/maplibre-gl.css";
 // worker本体をViteに正しくバンドルさせて、そのURLを取得する
-// (プレーンな ?url だとworkerが依存している maplibre-gl-shared.mjs が
-//  一緒にバンドルされず、workerが読み込み時に失敗する)
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 
 // アプリ起動時に一度だけ、workerの場所をMapLibreに教える
@@ -73,17 +71,18 @@ async function readErrorMessage(res: Response): Promise<string> {
 export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
   // マップ表示用のDOMを取得する。
   const mapContainer = useRef<HTMLDivElement | null>(null);
-  //   マップ保存用UseRef
+  //   マップ保存用useRef
   const mapRef = useRef<maplibregl.Map | null>(null);
-  //   マーカーデータ保存用useRef
-  const markersRef = useRef<maplibregl.Marker[]>([]);
+  //   マーカー保存用useRef(このページでは常に「その店舗の1本」だけなので配列にしていない)
+  const markerRef = useRef<maplibregl.Marker | null>(null);
 
   // 環境変数から値を取得する
   const apiKey = import.meta.env.VITE_MAP_API_KEY;
   const mapName = import.meta.env.VITE_MAP_NAME;
   const region = import.meta.env.VITE_AWS_REGION;
 
-  // 現在地取得用State
+  // 現在地取得用State(このテーマでは登録店舗が自分の近辺に限られる前提のため、
+  // 地図の中心は店舗の座標ではなく、あえて現在地のままにしている)
   const [position, setPosition] = useState<Position>({
     latitude: null,
     longitude: null,
@@ -101,9 +100,8 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
   const [menuStatus, setMenuStatus] = useState<MenuStatus>("loading");
   const [menuErrorMessage, setMenuErrorMessage] = useState<string | null>(null);
 
-  //   一番最初に行うuseEffect　現在地座標と店舗情報の獲得を行う
+  // 現在地座標の取得
   useEffect(() => {
-    // 現在地座標を獲得
     navigator.geolocation.getCurrentPosition((pos) => {
       setPosition({
         latitude: pos.coords.latitude,
@@ -112,44 +110,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     });
   }, []);
 
-  //   現在地情報獲得とともにAmazone Location ServiceのMapsAPIをたたき地図データを取得、描画する
-  useEffect(() => {
-    if (!mapContainer.current) return;
-    // 現在地情報がなければキャンセル
-    if (position.latitude === null || position.longitude === null) return;
-    // 接続先URLの成型：環境変数から取得した値をもとにして作成
-    const styleUrl = `https://maps.geo.${region}.amazonaws.com/maps/v0/maps/${mapName}/style-descriptor?key=${apiKey}`;
-    // 作成する地図の設定項目を書き込んで実際にAPIからデータを取得する
-    const map = new maplibregl.Map({
-      container: mapContainer.current,
-      style: styleUrl,
-      //   地図の中心とする座標
-      center: [position.longitude, position.latitude],
-      //   地図の縮尺レベルを定める
-      zoom: 16,
-    });
-    // マップをuseRefに格納(マーカー表示処理に使用するため)
-    mapRef.current = map;
-    // 拡大/縮小ボタンの追加
-    map.addControl(new maplibregl.NavigationControl(), "top-right");
-    // 地図にユーザーの位置情報を表示するコントロールを追加
-    map.addControl(
-      new maplibregl.GeolocateControl({
-        positionOptions: {
-          enableHighAccuracy: true,
-        },
-        trackUserLocation: true,
-      }),
-    );
-
-    // コンポーネントが描画されなくなると同時にデータを消去する処理(メモリリーク対策)
-    return () => {
-      map.remove();
-      mapRef.current = null;
-    };
-  }, [position]);
-
-  // 店舗情報の取得
+  // 店舗情報の取得(地図の生成には一切関与しない、純粋なデータ取得だけに専念させる)
   useEffect(() => {
     let cancelled = false;
 
@@ -180,21 +141,6 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
         const data = (await res.json()) as StoreDetail;
         setStore(data);
         setStoreStatus("success");
-
-        const map = mapRef.current; //マップをuseRefから取得
-        if (!map) return; // 地図がまだ無ければ何もしない
-
-        // 前回分のマーカーを消してから作り直す（重複防止）
-        markersRef.current.forEach((marker) => marker.remove());
-        markersRef.current = [];
-        // マーカーの作成
-        if (store) {
-          const marker = new maplibregl.Marker({ color: "#c8442d" })
-            .setLngLat([store.longitude, store.latitude])
-            .addTo(map);
-
-          markersRef.current.push(marker);
-        }
       })
       .catch((err) => {
         if (cancelled) return;
@@ -208,6 +154,47 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
       cancelled = true;
     };
   }, [placeId]);
+
+  // 地図は現在地を中心に表示しつつ、マーカーは店舗の座標に立てる。
+  // マーカーの生成にはstoreの座標が必要なため、position・storeの両方が
+  // 揃ってから地図を作る。
+  useEffect(() => {
+    if (!mapContainer.current) return;
+    if (position.latitude === null || position.longitude === null) return;
+    if (!store) return; // 店舗情報がまだ取得できていなければ何もしない
+
+    const styleUrl = `https://maps.geo.${region}.amazonaws.com/maps/v0/maps/${mapName}/style-descriptor?key=${apiKey}`;
+
+    const map = new maplibregl.Map({
+      container: mapContainer.current,
+      style: styleUrl,
+      // 現在地を中心にする(このテーマでは登録店舗が近辺に限られる前提のため)
+      center: [position.longitude, position.latitude],
+      zoom: 16,
+    });
+    mapRef.current = map;
+
+    map.addControl(new maplibregl.NavigationControl(), "top-right");
+    map.addControl(
+      new maplibregl.GeolocateControl({
+        positionOptions: { enableHighAccuracy: true },
+        trackUserLocation: true,
+      }),
+    );
+
+    // 店舗の位置にマーカーを立てる。storeは既に手元にあるデータなので
+    // setState直後の値のズレを心配する必要が無い。
+    const marker = new maplibregl.Marker({ color: "#c8442d" })
+      .setLngLat([store.longitude, store.latitude])
+      .addTo(map);
+    markerRef.current = marker;
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      markerRef.current = null;
+    };
+  }, [position, store]);
 
   // メニュー一覧の取得(店舗情報とは別のAPIなので、並行して取得する)
   useEffect(() => {
