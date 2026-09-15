@@ -70,7 +70,7 @@ export function RegisterMenuPage({ onNavigate }: RegisterMenuPageProps) {
     (async () => {
       try {
         const apiUrl =
-          "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/ShowMegaMap";
+          "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/map";
 
         const res = await fetch(apiUrl, {
           method: "POST",
@@ -121,7 +121,7 @@ export function RegisterMenuPage({ onNavigate }: RegisterMenuPageProps) {
 
     try {
       const apiUrl =
-        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/RegistMenu";
+        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/menus";
 
       // 画像が選ばれていれば、共有ユーティリティでリサイズ→S3へ直接アップロードする
       const image_url = imageFile

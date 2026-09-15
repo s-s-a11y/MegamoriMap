@@ -75,7 +75,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
     );
     // 店舗のカテゴリを取得、データがなければから配列として扱う
     fetch(
-      "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/ShowStoreCategory",
+      "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/categories/stores",
     )
       .then((res) => res.json())
       .then((data) => setCategories(data.categories ?? []));
@@ -120,7 +120,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
 
     try {
       const apiUrl =
-        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/SearchStore";
+        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores/search";
 
       // 現在地が取れていればそれを使い、まだなければフォールバック座標を使う
       const origin =
@@ -162,7 +162,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
 
     try {
       const apiUrl =
-        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/RegistStore";
+        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores";
 
       // 画像が選ばれていれば、共有ユーティリティでリサイズ→S3へ直接アップロードする
       const image_url = imageFile
@@ -247,7 +247,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
 
     try {
       const apiUrl =
-        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/RegistStoreCategory";
+        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/categories/stores";
 
       const res = await fetch(apiUrl, {
         method: "POST",

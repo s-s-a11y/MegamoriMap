@@ -40,7 +40,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
   //   画面表示時に一度だけ店舗情報を取得する
   useEffect(() => {
     fetch(
-      "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/ShowMegaMap",
+      "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/map",
       {
         method: "POST",
         headers: {

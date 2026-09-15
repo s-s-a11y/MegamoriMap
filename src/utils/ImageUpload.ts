@@ -55,7 +55,7 @@ export async function uploadImage(file: File, folder: string): Promise<string> {
   const blob = await resizeImageToJpegBlob(file);
 
   const issueUrlApiUrl =
-    "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/ImageUploadUrl";
+    "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/images/upload-url";
   // Lambda関数ImageUploadUrlを呼び出して画像アップロード用URLを取得
   const issueRes = await fetch(issueUrlApiUrl, {
     method: "POST",
