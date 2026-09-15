@@ -208,8 +208,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     setMenuErrorMessage(null);
 
     const apiUrl =
-      "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/megamorimap/ShowStoreMenues";
-
+      "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores/menus";
     fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
