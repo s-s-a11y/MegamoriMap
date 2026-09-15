@@ -3,7 +3,7 @@ import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に�
 
 // このモーダルが必要とするメニュー情報だけを定義(呼び出し元の型に依存しない)
 interface MenuForUpdate {
-  menu_id: number;
+  menu_id: string;
   menu_name: string;
   price: number;
   memo: string;

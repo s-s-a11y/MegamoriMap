@@ -41,7 +41,7 @@ interface StoreDetail {
 
 // ShowStoreMenus Lambdaが返す、メニュー1件分の情報
 interface Menu {
-  menu_id: number;
+  menu_id: string;
   menu_name: string;
   price: number;
   memo: string;
