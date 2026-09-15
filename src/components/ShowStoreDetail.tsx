@@ -1,5 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import { formatBudgetBand } from "../utils/FormatPrice"; // 実際の配置場所に合わせてパスを調整してください
+import { UpdateStoreModal } from "../modal/UpdateStoreModal"; // 実際の配置場所に合わせてパスを調整してください
+import { UpdateMenuModal } from "../modal/UpdateMenuModal"; // 実際の配置場所に合わせてパスを調整してください
+import "../css_components/ShowStoreDetail.css";
 // maplibre-glをインポート(V6対応版)
 import * as maplibregl from "maplibre-gl";
 // 地図表示の際のstylesheetを読み込み
@@ -17,7 +20,6 @@ interface Position {
 }
 
 // ShowStoreDetail Lambdaが返す、1店舗分の詳細情報
-// (ShowStoreDetail.pyのformat_store()の出力に合わせている)
 interface StoreDetail {
   place_id: string;
   title: string;
@@ -32,7 +34,6 @@ interface StoreDetail {
 }
 
 // ShowStoreMenus Lambdaが返す、メニュー1件分の情報
-// (ShowStoreMenus.pyのformat_menus()の出力に合わせている)
 interface Menu {
   menu_id: number;
   menu_name: string;
@@ -43,6 +44,7 @@ interface Menu {
 
 type StoreStatus = "loading" | "success" | "error" | "not-found";
 type MenuStatus = "loading" | "success" | "error";
+type DeleteStatus = "idle" | "loading" | "error";
 
 // App.tsx から画面切り替え関数を受け取るためのprops
 interface StoreDetailPageProps {
@@ -52,8 +54,6 @@ interface StoreDetailPageProps {
 
 // ------------------------------------------------------------
 // エラーメッセージの読み取り
-// ShowStoreDetail.py / ShowStoreMenus.py は 400のときはJSON({"message": "..."})、
-// 401/500のときはプレーン文字列を返すので、両方に対応できるようにする
 // ------------------------------------------------------------
 async function readErrorMessage(res: Response): Promise<string> {
   const rawText = await res.text();
@@ -71,9 +71,7 @@ async function readErrorMessage(res: Response): Promise<string> {
 export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
   // マップ表示用のDOMを取得する。
   const mapContainer = useRef<HTMLDivElement | null>(null);
-  //   マップ保存用useRef
   const mapRef = useRef<maplibregl.Map | null>(null);
-  //   マーカー保存用useRef(このページでは常に「その店舗の1本」だけなので配列にしていない)
   const markerRef = useRef<maplibregl.Marker | null>(null);
 
   // 環境変数から値を取得する
@@ -81,8 +79,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
   const mapName = import.meta.env.VITE_MAP_NAME;
   const region = import.meta.env.VITE_AWS_REGION;
 
-  // 現在地取得用State(このテーマでは登録店舗が自分の近辺に限られる前提のため、
-  // 地図の中心は店舗の座標ではなく、あえて現在地のままにしている)
+  // 現在地取得用State
   const [position, setPosition] = useState<Position>({
     latitude: null,
     longitude: null,
@@ -94,11 +91,35 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
   const [storeErrorMessage, setStoreErrorMessage] = useState<string | null>(
     null,
   );
+  // ★追加：店舗情報を再取得させるためのトリガー(値そのものに意味はなく、変化を検知するためだけに使う)
+  const [storeRefreshKey, setStoreRefreshKey] = useState(0);
 
   // ---- メニュー一覧まわりの状態 ----
   const [menus, setMenus] = useState<Menu[]>([]);
   const [menuStatus, setMenuStatus] = useState<MenuStatus>("loading");
   const [menuErrorMessage, setMenuErrorMessage] = useState<string | null>(null);
+  // ★追加：メニュー一覧を再取得させるためのトリガー
+  const [menuRefreshKey, setMenuRefreshKey] = useState(0);
+
+  // ---- 店舗の更新・削除まわりの状態 ----
+  const [isUpdateStoreModalOpen, setIsUpdateStoreModalOpen] = useState(false);
+  const [isStoreDeleteConfirmOpen, setIsStoreDeleteConfirmOpen] =
+    useState(false);
+  const [storeDeleteStatus, setStoreDeleteStatus] =
+    useState<DeleteStatus>("idle");
+  const [storeDeleteError, setStoreDeleteError] = useState<string | null>(null);
+
+  // ---- メニューの更新・削除まわりの状態 ----
+  // 「今どのメニューを編集/削除しようとしているか」で管理する。
+  // nullなら、更新モーダル・削除確認ダイアログのどちらも閉じている状態。
+  const [editingMenu, setEditingMenu] = useState<Menu | null>(null);
+  const [menuPendingDelete, setMenuPendingDelete] = useState<Menu | null>(null);
+  const [menuDeleteStatus, setMenuDeleteStatus] =
+    useState<DeleteStatus>("idle");
+  const [menuDeleteError, setMenuDeleteError] = useState<string | null>(null);
+
+  const deleteConfirmDialogRef = useRef<HTMLDialogElement | null>(null);
+  const menuDeleteConfirmDialogRef = useRef<HTMLDialogElement | null>(null);
 
   // 現在地座標の取得
   useEffect(() => {
@@ -110,7 +131,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     });
   }, []);
 
-  // 店舗情報の取得(地図の生成には一切関与しない、純粋なデータ取得だけに専念させる)
+  // 店舗情報の取得
   useEffect(() => {
     let cancelled = false;
 
@@ -128,7 +149,6 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
       .then(async (res) => {
         if (cancelled) return;
 
-        // 404: 該当する店舗が存在しない
         if (res.status === 404) {
           setStoreStatus("not-found");
           return;
@@ -153,22 +173,20 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     return () => {
       cancelled = true;
     };
-  }, [placeId]);
+    // ★変更：storeRefreshKeyが変わるたび(更新成功時など)に再取得する
+  }, [placeId, storeRefreshKey]);
 
   // 地図は現在地を中心に表示しつつ、マーカーは店舗の座標に立てる。
-  // マーカーの生成にはstoreの座標が必要なため、position・storeの両方が
-  // 揃ってから地図を作る。
   useEffect(() => {
     if (!mapContainer.current) return;
     if (position.latitude === null || position.longitude === null) return;
-    if (!store) return; // 店舗情報がまだ取得できていなければ何もしない
+    if (!store) return;
 
     const styleUrl = `https://maps.geo.${region}.amazonaws.com/maps/v0/maps/${mapName}/style-descriptor?key=${apiKey}`;
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
       style: styleUrl,
-      // 現在地を中心にする(このテーマでは登録店舗が近辺に限られる前提のため)
       center: [position.longitude, position.latitude],
       zoom: 16,
     });
@@ -186,8 +204,6 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
       geolocateControl.trigger();
     });
 
-    // 店舗の位置にマーカーを立てる。storeは既に手元にあるデータなので
-    // setState直後の値のズレを心配する必要が無い。
     const marker = new maplibregl.Marker({ color: "#c8442d" })
       .setLngLat([store.longitude, store.latitude])
       .addTo(map);
@@ -200,7 +216,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     };
   }, [position, store]);
 
-  // メニュー一覧の取得(店舗情報とは別のAPIなので、並行して取得する)
+  // メニュー一覧の取得
   useEffect(() => {
     let cancelled = false;
 
@@ -209,6 +225,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
 
     const apiUrl =
       "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores/menus";
+
     fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -238,12 +255,112 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     return () => {
       cancelled = true;
     };
-  }, [placeId]);
+    // ★変更：menuRefreshKeyが変わるたび(メニューの更新・削除成功時)に再取得する
+  }, [placeId, menuRefreshKey]);
+
+  // ★追加：店舗削除の確認ダイアログの開閉制御
+  useEffect(() => {
+    const dialog = deleteConfirmDialogRef.current;
+    if (!dialog) return;
+    if (isStoreDeleteConfirmOpen && !dialog.open) {
+      dialog.showModal();
+    } else if (!isStoreDeleteConfirmOpen && dialog.open) {
+      dialog.close();
+    }
+  }, [isStoreDeleteConfirmOpen]);
+
+  // ★追加：メニュー削除の確認ダイアログの開閉制御
+  useEffect(() => {
+    const dialog = menuDeleteConfirmDialogRef.current;
+    if (!dialog) return;
+    if (menuPendingDelete && !dialog.open) {
+      dialog.showModal();
+    } else if (!menuPendingDelete && dialog.open) {
+      dialog.close();
+    }
+  }, [menuPendingDelete]);
+
+  // ★追加：店舗の削除を確定する
+  const handleConfirmDeleteStore = async () => {
+    if (!store) return;
+
+    setStoreDeleteStatus("loading");
+    setStoreDeleteError(null);
+
+    try {
+      const apiUrl =
+        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores/delete";
+
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ place_id: store.place_id }),
+      });
+
+      if (!res.ok) {
+        throw new Error(await readErrorMessage(res));
+      }
+
+      // 店舗自体が無くなったので、詳細画面には留まれない。地図画面へ戻す。
+      onNavigate("map");
+    } catch (err) {
+      setStoreDeleteError(
+        err instanceof Error ? err.message : "削除に失敗しました",
+      );
+      setStoreDeleteStatus("error");
+    }
+  };
+
+  // ★追加：メニューの削除を確定する
+  const handleConfirmDeleteMenu = async () => {
+    if (!menuPendingDelete) return;
+
+    setMenuDeleteStatus("loading");
+    setMenuDeleteError(null);
+
+    try {
+      const apiUrl =
+        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/menus/delete";
+
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ menu_id: menuPendingDelete.menu_id }),
+      });
+
+      if (!res.ok) {
+        throw new Error(await readErrorMessage(res));
+      }
+
+      setMenuPendingDelete(null);
+      setMenuDeleteStatus("idle");
+      // メニュー削除で店舗のavg_priceも変わりうるため、両方を取り直す
+      setMenuRefreshKey((key) => key + 1);
+      setStoreRefreshKey((key) => key + 1);
+    } catch (err) {
+      setMenuDeleteError(
+        err instanceof Error ? err.message : "削除に失敗しました",
+      );
+      setMenuDeleteStatus("error");
+    }
+  };
 
   return (
     <div>
       <nav>
-        <button onClick={() => onNavigate("map")}>← 戻る</button>
+        <button onClick={() => onNavigate("map")}>← 地図に戻る</button>
+
+        {/* ★追加：店舗の更新・削除ボタン(右側に寄せる。ShowStoreDetail.css参照) */}
+        {storeStatus === "success" && store && (
+          <div className="detail-actions">
+            <button onClick={() => setIsUpdateStoreModalOpen(true)}>
+              更新
+            </button>
+            <button onClick={() => setIsStoreDeleteConfirmOpen(true)}>
+              削除
+            </button>
+          </div>
+        )}
       </nav>
 
       <main>
@@ -259,7 +376,6 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
 
         {storeStatus === "success" && store && (
           <>
-            {/* 店舗の写真。未登録(空文字)なら表示自体をスキップする */}
             {store.image_url ? (
               <img src={store.image_url} alt={`${store.title}の店舗写真`} />
             ) : (
@@ -324,6 +440,14 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                     <strong>{menu.menu_name}</strong>
                     <span>¥{menu.price.toLocaleString()}</span>
                     {menu.memo && <p>{menu.memo}</p>}
+
+                    {/* ★追加：メニューの更新・削除ボタン(カード下部中央。ShowStoreDetail.css参照) */}
+                    <div className="menu-card-actions">
+                      <button onClick={() => setEditingMenu(menu)}>更新</button>
+                      <button onClick={() => setMenuPendingDelete(menu)}>
+                        削除
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -331,6 +455,76 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
           </section>
         )}
       </main>
+
+      {/* ★追加：店舗情報更新モーダル(別ファイル) */}
+      {store && (
+        <UpdateStoreModal
+          store={store}
+          isOpen={isUpdateStoreModalOpen}
+          onClose={() => setIsUpdateStoreModalOpen(false)}
+          onUpdated={() => setStoreRefreshKey((key) => key + 1)}
+        />
+      )}
+
+      {/* ★追加：店舗削除の確認ダイアログ(このファイル内で完結させる) */}
+      <dialog
+        ref={deleteConfirmDialogRef}
+        onClose={() => setIsStoreDeleteConfirmOpen(false)}
+      >
+        <p>「{store?.title}」を削除しますか？</p>
+        {storeDeleteStatus === "error" && (
+          <p role="alert">{storeDeleteError}</p>
+        )}
+        <div>
+          <button
+            type="button"
+            onClick={() => setIsStoreDeleteConfirmOpen(false)}
+          >
+            キャンセル
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirmDeleteStore}
+            disabled={storeDeleteStatus === "loading"}
+          >
+            {storeDeleteStatus === "loading" ? "削除中..." : "削除する"}
+          </button>
+        </div>
+      </dialog>
+
+      {/* ★追加：メニュー更新モーダル(別ファイル) */}
+      {editingMenu && (
+        <UpdateMenuModal
+          menu={editingMenu}
+          isOpen={editingMenu !== null}
+          onClose={() => setEditingMenu(null)}
+          onUpdated={() => {
+            setMenuRefreshKey((key) => key + 1);
+            setStoreRefreshKey((key) => key + 1); // 価格変更でavg_priceが変わりうるため
+          }}
+        />
+      )}
+
+      {/* ★追加：メニュー削除の確認ダイアログ(このファイル内で完結させる) */}
+      <dialog
+        ref={menuDeleteConfirmDialogRef}
+        onClose={() => setMenuPendingDelete(null)}
+      >
+        <p>「{menuPendingDelete?.menu_name}」を削除しますか？</p>
+        {menuDeleteStatus === "error" && <p role="alert">{menuDeleteError}</p>}
+        <div>
+          <button type="button" onClick={() => setMenuPendingDelete(null)}>
+            キャンセル
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirmDeleteMenu}
+            disabled={menuDeleteStatus === "loading"}
+          >
+            {menuDeleteStatus === "loading" ? "削除中..." : "削除する"}
+          </button>
+        </div>
+      </dialog>
     </div>
   );
 }

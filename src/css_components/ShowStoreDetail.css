@@ -1,0 +1,20 @@
+/*
+  ShowStoreDetail.tsx 専用のスタイル。
+  App.css（共通・タグのみ）では表現できない、このページ固有の
+  ボタン配置だけをここに書く。
+*/
+
+/* nav内で「← 地図に戻る」の右側に、更新・削除ボタンを寄せる */
+.detail-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* メニューカード下部中央に、更新・削除ボタンを配置する */
+.menu-card-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
