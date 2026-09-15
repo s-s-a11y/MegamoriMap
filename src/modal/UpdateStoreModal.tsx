@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に合わせてパスを調整してください
 
 // このモーダルが必要とする店舗情報だけを定義(呼び出し元の型に依存しない)
+// ※commentsはここでは扱わない(上書きではなく追記専用のAddStoreComment.py側の責務)
 interface StoreForUpdate {
   place_id: string;
   title: string;
   store_category_name: string;
-  comment: string;
   store_url: string;
 }
 
@@ -48,7 +48,6 @@ export function UpdateStoreModal({
 
   const [categories, setCategories] = useState<string[]>([]);
   const [category, setCategory] = useState(store.store_category_name);
-  const [comment, setComment] = useState(store.comment);
   const [storeUrl, setStoreUrl] = useState(store.store_url);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [status, setStatus] = useState<Status>("idle");
@@ -58,7 +57,6 @@ export function UpdateStoreModal({
   useEffect(() => {
     if (!isOpen) return;
     setCategory(store.store_category_name);
-    setComment(store.comment);
     setStoreUrl(store.store_url);
     setImageFile(null);
     setStatus("idle");
@@ -109,7 +107,6 @@ export function UpdateStoreModal({
         body: JSON.stringify({
           place_id: store.place_id,
           store_category_name: category,
-          comment,
           store_url: storeUrl,
           image_url,
         }),
@@ -147,15 +144,6 @@ export function UpdateStoreModal({
               </option>
             ))}
           </select>
-        </label>
-
-        <label>
-          コメント
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            rows={3}
-          />
         </label>
 
         <label>

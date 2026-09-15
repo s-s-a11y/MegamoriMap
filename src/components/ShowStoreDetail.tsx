@@ -19,6 +19,12 @@ interface Position {
   longitude: number | null;
 }
 
+// 店舗のコメント1件分(ShowStoreDetail.py / AddStoreComment.pyの1件と一致)
+interface StoreComment {
+  comment: string;
+  posted_at: string;
+}
+
 // ShowStoreDetail Lambdaが返す、1店舗分の詳細情報
 interface StoreDetail {
   place_id: string;
@@ -27,7 +33,7 @@ interface StoreDetail {
   address_label: string;
   store_url: string;
   store_category_name: string;
-  comment: string;
+  comments: StoreComment[];
   image_url: string;
   longitude: number;
   latitude: number;
@@ -120,6 +126,13 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
 
   const deleteConfirmDialogRef = useRef<HTMLDialogElement | null>(null);
   const menuDeleteConfirmDialogRef = useRef<HTMLDialogElement | null>(null);
+
+  // ---- コメント追加まわりの状態 ----
+  const [newComment, setNewComment] = useState("");
+  const [addCommentStatus, setAddCommentStatus] = useState<
+    "idle" | "loading" | "error"
+  >("idle");
+  const [addCommentError, setAddCommentError] = useState<string | null>(null);
 
   // 現在地座標の取得
   useEffect(() => {
@@ -280,6 +293,40 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     }
   }, [menuPendingDelete]);
 
+  // ★追加：コメントを1件追加する
+  const handleAddComment = async (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!store || !newComment.trim()) return;
+
+    setAddCommentStatus("loading");
+    setAddCommentError(null);
+
+    try {
+      const apiUrl =
+        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores/addcomment";
+
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ place_id: store.place_id, comment: newComment }),
+      });
+
+      if (!res.ok) {
+        throw new Error(await readErrorMessage(res));
+      }
+
+      setNewComment("");
+      setAddCommentStatus("idle");
+      // 追加したコメントを含む最新の店舗情報を取り直す
+      setStoreRefreshKey((key) => key + 1);
+    } catch (err) {
+      setAddCommentError(
+        err instanceof Error ? err.message : "コメントの追加に失敗しました",
+      );
+      setAddCommentStatus("error");
+    }
+  };
+
   // ★追加：店舗の削除を確定する
   const handleConfirmDeleteStore = async () => {
     if (!store) return;
@@ -395,13 +442,6 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
               <dt>予算帯</dt>
               <dd>{formatBudgetBand(store.avg_price)}</dd>
 
-              {store.comment && (
-                <>
-                  <dt>コメント</dt>
-                  <dd>{store.comment}</dd>
-                </>
-              )}
-
               {store.store_url && (
                 <>
                   <dt>店舗ページ</dt>
@@ -417,6 +457,51 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
         )}
 
         <div id="map-canvas" ref={mapContainer} />
+
+        {/* --- コメント --- */}
+        {storeStatus === "success" && store && (
+          <section>
+            <h2>コメント</h2>
+
+            {store.comments.length === 0 && <p>まだコメントはありません。</p>}
+
+            {store.comments.length > 0 && (
+              <ul>
+                {store.comments.map((c, index) => (
+                  <li key={index}>
+                    <p>{c.comment}</p>
+                    <small>{c.posted_at}</small>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <form onSubmit={handleAddComment}>
+              <label>
+                コメントを追加
+                <textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  rows={3}
+                  required
+                />
+              </label>
+
+              {addCommentStatus === "error" && (
+                <p role="alert">{addCommentError}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={addCommentStatus === "loading" || !newComment.trim()}
+              >
+                {addCommentStatus === "loading"
+                  ? "追加中..."
+                  : "コメントを追加する"}
+              </button>
+            </form>
+          </section>
+        )}
 
         {/* --- メニュー一覧 --- */}
         {storeStatus === "success" && (
