@@ -281,7 +281,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
     <div>
       {/* 他の画面への移動ボタン */}
       <nav>
-        <button onClick={() => onNavigate("map")}>← 地図に戻る</button>
+        <button onClick={() => onNavigate("map")}>← 戻る</button>
         <button onClick={() => onNavigate("regist-menu")}>
           メニュー登録へ
         </button>

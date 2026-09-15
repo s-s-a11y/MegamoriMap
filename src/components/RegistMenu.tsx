@@ -159,7 +159,7 @@ export function RegisterMenuPage({ onNavigate }: RegisterMenuPageProps) {
   // ★追加：どの状態でも表示する、他の画面への移動ボタン
   const navButtons = (
     <nav>
-      <button onClick={() => onNavigate("map")}>← 地図に戻る</button>
+      <button onClick={() => onNavigate("map")}>← 戻る</button>
       <button onClick={() => onNavigate("regist-store")}>店舗登録へ</button>
     </nav>
   );

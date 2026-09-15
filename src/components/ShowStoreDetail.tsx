@@ -243,7 +243,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
   return (
     <div>
       <nav>
-        <button onClick={() => onNavigate("map")}>← 地図に戻る</button>
+        <button onClick={() => onNavigate("map")}>← 戻る</button>
       </nav>
 
       <main>
