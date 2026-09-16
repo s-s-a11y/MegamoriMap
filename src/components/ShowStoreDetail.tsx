@@ -395,7 +395,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
   return (
     <div>
       <nav>
-        <button onClick={() => onNavigate("map")}>← 地図に戻る</button>
+        <button onClick={() => onNavigate("map")}>← 戻る</button>
 
         {/* ★追加：店舗の更新・削除ボタン(右側に寄せる。ShowStoreDetail.css参照) */}
         {storeStatus === "success" && store && (
