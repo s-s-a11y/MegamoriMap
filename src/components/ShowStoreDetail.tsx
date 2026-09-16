@@ -536,6 +536,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                       <img src={menu.image_url} alt={menu.menu_name} />
                     )}
                     <strong>{menu.menu_name}</strong>
+                    <br />
                     <span>¥{menu.price.toLocaleString()}</span>
                     {menu.memo && <p>{menu.memo}</p>}
 
