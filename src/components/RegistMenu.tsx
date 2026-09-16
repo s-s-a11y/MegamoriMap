@@ -206,7 +206,7 @@ export function RegisterMenuPage({ onNavigate }: RegisterMenuPageProps) {
               </option>
               {stores.map((store) => (
                 <option key={store.place_id} value={store.place_id}>
-                  {store.title}（{store.address_label}）
+                  {store.title}
                 </option>
               ))}
             </select>
