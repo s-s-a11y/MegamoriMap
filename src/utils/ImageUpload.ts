@@ -9,35 +9,36 @@ interface IssueUploadUrlResponse {
   image_url: string;
 }
 
-// 画像ファイルを長辺MAX_IMAGE_DIMENSION以内に収まるようリサイズし、JPEGのBlobに変換する。
+// 画像ファイルを長辺MAX_IMAGE_DIMENSION以内に収まるようリサイズし、
+// JPEGのBlobに変換する。
 async function resizeImageToJpegBlob(file: File): Promise<Blob> {
-  // インプットタグから入ってくるファイルを、幅◯px、高さ◯px の画像として扱えるようにするブラウザ標準搭載機能
-  const imageBitmap = await createImageBitmap(file);
-  // リサイズを行う際に何倍に縮小すればいいかを計算する
+  // imageOrientation: "from-image" を明示することで、スマホを横向きにして
+  // 撮った写真のEXIF方向情報を確実に反映させる(指定しないとブラウザによっては
+  // 生のセンサーデータのまま扱われ、被写体が横倒しで保存されることがある)
+  const imageBitmap = await createImageBitmap(file, {
+    imageOrientation: "from-image",
+  });
   const scale = Math.min(
-    1, // 既に規定サイズより小さい場合はそのまま１倍
+    1,
     MAX_IMAGE_DIMENSION / Math.max(imageBitmap.width, imageBitmap.height),
   );
-  // 画像描画用のHTML要素を縮小率に合わせたサイズで作成する。canvasを使用することによって、JavaScriptから画像を描画することができるようになる機能
+
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(imageBitmap.width * scale);
   canvas.height = Math.round(imageBitmap.height * scale);
 
-  // 2D画像描画用のツールを獲得
   const ctx = canvas.getContext("2d");
   if (!ctx) {
     throw new Error("画像の処理に失敗しました");
   }
-  // 実際にcanvasに対してリサイズした画像を描画する
   ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
-  // canvasの内容を実際にBlob型に変換する処理
-  // Promiseは、await/asyncでの処理待ちができない場合に使用する少し古いコールバック待機宣言
+
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) =>
         blob ? resolve(blob) : reject(new Error("画像の変換に失敗しました")),
-      "image/jpeg", // データ形式
-      IMAGE_JPEG_QUALITY, // 画質
+      "image/jpeg",
+      IMAGE_JPEG_QUALITY,
     );
   });
 }
@@ -51,12 +52,11 @@ async function resizeImageToJpegBlob(file: File): Promise<Blob> {
  * @returns アップロード完了後、DBに保存すべき画像の公開URL
  */
 export async function uploadImage(file: File, folder: string): Promise<string> {
-  // 画像をバイナリ形式に変換、Lambdaのレスポンス上限に収まるサイズにリサイズ
   const blob = await resizeImageToJpegBlob(file);
 
   const issueUrlApiUrl =
     "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/images/upload-url";
-  // Lambda関数ImageUploadUrlを呼び出して画像アップロード用URLを取得
+
   const issueRes = await fetch(issueUrlApiUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -72,7 +72,6 @@ export async function uploadImage(file: File, folder: string): Promise<string> {
 
   // IssueImageUploadUrl.py が署名に含めたCacheControlと、
   // ここで送るヘッダーが一致していないと署名検証エラー(403)になるので注意。
-  // 画像データをアップロード用URLにPUT
   const uploadRes = await fetch(upload_url, {
     method: "PUT",
     headers: {
