@@ -1,10 +1,10 @@
 /*
   ShowStoreDetail.tsx 専用のスタイル。
   App.css（共通・タグのみ）では表現できない、このページ固有の
-  ボタン配置だけをここに書く。
+  ボタン配置・メニューの横スクロール・地図の操作制御をここに書く。
 */
 
-/* nav内で「← 地図に戻る」の右側に、更新・削除ボタンを寄せる */
+/* nav内で「メニューを登録する」の右側に、更新・削除ボタンを寄せる */
 .detail-actions {
   display: flex;
   gap: 8px;
@@ -17,4 +17,48 @@
   justify-content: center;
   gap: 8px;
   margin-top: 8px;
+}
+
+/*
+  メニュー一覧：縦一列(App.css側のulの既定)ではなく、横並び＋左右スクロールにする。
+*/
+.menu-list {
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  gap: 12px;
+  padding-bottom: 8px; /* スクロールバー分の余白 */
+}
+
+.menu-list__item {
+  flex: 0 0 auto; /* 横幅を内容に応じて伸縮させず、固定幅にする */
+  width: 220px;
+}
+
+/*
+  地図：1回タップするまで操作できないようにする透明なオーバーレイ。
+  #map-canvas自体はApp.css側で幅100%・高さ500pxを指定済みのため、
+  ここではその親要素(map-wrapper)を基準にオーバーレイを重ねるだけにする。
+*/
+.map-wrapper {
+  position: relative;
+}
+
+.map-activate-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(36, 21, 17, 0.35);
+  cursor: pointer;
+}
+
+.map-activate-overlay p {
+  margin: 0;
+  padding: 8px 16px;
+  border-radius: 4px;
+  background: rgba(36, 21, 17, 0.75);
+  color: var(--paper-soft);
+  font-weight: 700;
 }

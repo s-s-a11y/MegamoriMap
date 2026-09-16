@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に合わせてパスを調整してください
+import { ImagePickerWithRotation } from "../components/ImagePickerWithRotation"; // 実際の配置場所に合わせてパスを調整してください
 
-// このモーダルが必要とする店舗情報だけを定義(呼び出し元の型に依存しない)
-// ※commentsはここでは扱わない(上書きではなく追記専用のAddStoreComment.py側の責務)
 interface StoreForUpdate {
   place_id: string;
   title: string;
@@ -14,17 +13,11 @@ interface UpdateStoreModalProps {
   store: StoreForUpdate;
   isOpen: boolean;
   onClose: () => void;
-  // 更新成功時に、呼び出し元に「最新の情報を取り直してね」と伝えるためのコールバック
   onUpdated: () => void;
 }
 
 type Status = "idle" | "loading" | "error";
 
-// ------------------------------------------------------------
-// エラーメッセージの読み取り
-// UpdateStore.py は 400/404 のときはJSON({"message": "..."})、
-// 401のときはプレーン文字列を返すので、両方に対応できるようにする
-// ------------------------------------------------------------
 async function readErrorMessage(res: Response): Promise<string> {
   const rawText = await res.text();
   try {
@@ -50,20 +43,21 @@ export function UpdateStoreModal({
   const [category, setCategory] = useState(store.store_category_name);
   const [storeUrl, setStoreUrl] = useState(store.store_url);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  // ★追加：画像の回転角度(0/90/180/270)
+  const [imageRotation, setImageRotation] = useState(0);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // モーダルを開くたびに、その時点の店舗情報でフォームを初期化し直す
   useEffect(() => {
     if (!isOpen) return;
     setCategory(store.store_category_name);
     setStoreUrl(store.store_url);
     setImageFile(null);
+    setImageRotation(0);
     setStatus("idle");
     setErrorMessage(null);
   }, [isOpen, store]);
 
-  // <dialog>要素の開閉を、親から渡されるisOpenと同期させる
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
@@ -74,7 +68,6 @@ export function UpdateStoreModal({
     }
   }, [isOpen]);
 
-  // カテゴリー選択肢の取得(モーダルを開くたびに最新を取り直す)
   useEffect(() => {
     if (!isOpen) return;
 
@@ -96,9 +89,8 @@ export function UpdateStoreModal({
         "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores/update";
 
       // 画像を選び直した場合のみアップロードし、image_urlを送る
-      // (選び直していなければキーごと送らず、既存の画像を維持する)
       const image_url = imageFile
-        ? await uploadImage(imageFile, "stores")
+        ? await uploadImage(imageFile, "stores", imageRotation)
         : undefined;
 
       const res = await fetch(apiUrl, {
@@ -155,14 +147,14 @@ export function UpdateStoreModal({
           />
         </label>
 
-        <label>
-          写真を差し替える（任意）
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-          />
-        </label>
+        {/* ★変更：プレビュー＋回転ボタン付きの共有コンポーネントに置き換え */}
+        <ImagePickerWithRotation
+          label="写真を差し替える（任意）"
+          file={imageFile}
+          rotation={imageRotation}
+          onFileChange={setImageFile}
+          onRotationChange={setImageRotation}
+        />
 
         {status === "error" && <p role="alert">{errorMessage}</p>}
 

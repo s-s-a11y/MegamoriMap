@@ -1,37 +1,25 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に合わせてパスを調整してください
+import { ImagePickerWithRotation } from "./ImagePickerWithRotation"; // 実際の配置場所に合わせてパスを調整してください
 
-// ------------------------------------------------------------
-// 型定義（このファイル専用。他のファイルには依存しない）
-// ------------------------------------------------------------
+type SubmitStatus = "idle" | "loading" | "error";
 
-// メガ盛りマップ表示API（ShowMegaMap）が返す、登録済み店舗の情報
-// = 店舗選択プルダウンに使う
-interface Store {
-  place_id: string;
-  title: string;
-  address_label: string;
-}
-
-type LoadStatus = "loading" | "success" | "error";
-type SubmitStatus = "idle" | "loading" | "success" | "error";
-
-// ★追加：App.tsx から画面切り替え関数を受け取るためのprops
+// ★変更：店舗詳細画面から必ずplace_id・店舗名を受け取る形式に変更したため、
+// 店舗一覧の取得(ShowMegaMap)・店舗選択セレクトタブは不要になった。
 interface RegisterMenuPageProps {
-  onNavigate: (view: "map" | "regist-store" | "regist-menu") => void;
+  placeId: string;
+  storeName: string;
+  onNavigate: (
+    view: "map" | "regist-store" | "regist-menu" | "store-detail",
+    placeId?: string,
+    storeName?: string,
+  ) => void;
 }
 
 const MENU_NAME_MAX_LENGTH = 30; // RegistMenu.py: MAX_MENU_NAME_LENGTH = 30
 
-// 池袋駅付近。ShowMegaMap は longitude/latitude が必須入力だが、
-// 実装上は絞り込みに使われていないため、固定値を送っている。
-const DEFAULT_ORIGIN = { longitude: 139.7109, latitude: 35.7295 };
-
 // ------------------------------------------------------------
 // エラーメッセージの読み取り
-// RegistMenu.py は 400（バリデーションエラー）と
-// 500の一部（menu_id採番の競合）はJSON({"message": "..."})、
-// それ以外の500はプレーン文字列を返すので、両方に対応できるようにする
 // ------------------------------------------------------------
 async function readErrorMessage(res: Response): Promise<string> {
   const rawText = await res.text();
@@ -46,65 +34,26 @@ async function readErrorMessage(res: Response): Promise<string> {
   }
 }
 
-export function RegisterMenuPage({ onNavigate }: RegisterMenuPageProps) {
-  // ---- 店舗一覧（プルダウン用）まわりの状態 ----
-  const [stores, setStores] = useState<Store[]>([]);
-  const [loadStatus, setLoadStatus] = useState<LoadStatus>("loading");
-  const [loadError, setLoadError] = useState<string | null>(null);
-
+export function RegisterMenuPage({
+  placeId,
+  storeName,
+  onNavigate,
+}: RegisterMenuPageProps) {
   // ---- 入力フォームの状態 ----
-  const [placeId, setPlaceId] = useState("");
   const [menuName, setMenuName] = useState("");
   const [price, setPrice] = useState("");
   const [memo, setMemo] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
+  // ★追加：画像の回転角度(0/90/180/270)
+  const [imageRotation, setImageRotation] = useState(0);
 
   // ---- 登録処理の状態 ----
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>("idle");
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // 画面表示時に一度だけ、登録済み店舗一覧を取得してプルダウンに使う
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const apiUrl =
-          "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/map";
-
-        const res = await fetch(apiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(DEFAULT_ORIGIN),
-        });
-
-        if (!res.ok) {
-          throw new Error(await readErrorMessage(res));
-        }
-
-        const data = await res.json();
-        if (!cancelled) {
-          setStores(data.stores ?? []);
-          setLoadStatus("success");
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setLoadError(
-            err instanceof Error ? err.message : "店舗一覧の取得に失敗しました",
-          );
-          setLoadStatus("error");
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // RegistMenu.py の check_input() が要求する条件と同じ内容を、送信前にここでも確認する
+  // place_idは既にpropsで確定しているため、
+  // RegistMenu.py の check_input() が要求する残りの条件だけ確認する
   const isFormValid =
-    placeId !== "" &&
     menuName.trim() !== "" &&
     menuName.length <= MENU_NAME_MAX_LENGTH &&
     price !== "" &&
@@ -123,9 +72,9 @@ export function RegisterMenuPage({ onNavigate }: RegisterMenuPageProps) {
       const apiUrl =
         "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/menus";
 
-      // 画像が選ばれていれば、共有ユーティリティでリサイズ→S3へ直接アップロードする
+      // 画像が選ばれていれば、共有ユーティリティでリサイズ・回転→S3へ直接アップロードする
       const image_url = imageFile
-        ? await uploadImage(imageFile, "menus")
+        ? await uploadImage(imageFile, "menus", imageRotation)
         : undefined;
 
       const res = await fetch(apiUrl, {
@@ -144,74 +93,26 @@ export function RegisterMenuPage({ onNavigate }: RegisterMenuPageProps) {
         throw new Error(await readErrorMessage(res));
       }
 
-      setSubmitStatus("success");
-      // 続けて別のメニューを登録しやすいよう、店舗選択以外はリセットする
-      setMenuName("");
-      setPrice("");
-      setMemo("");
-      setImageFile(null);
+      // ★変更：成功メッセージを出して留まるのではなく、
+      // 該当店舗の詳細画面へ即座に遷移する
+      onNavigate("store-detail", placeId);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "登録に失敗しました");
       setSubmitStatus("error");
     }
   };
 
-  // ★追加：どの状態でも表示する、他の画面への移動ボタン
-  const navButtons = (
-    <nav>
-      <button onClick={() => onNavigate("map")}>← 戻る</button>
-      <button onClick={() => onNavigate("regist-store")}>店舗登録へ</button>
-    </nav>
-  );
-
-  if (loadStatus === "loading") {
-    return (
-      <div>
-        {navButtons}
-        <main>
-          <p>店舗一覧を読み込み中...</p>
-        </main>
-      </div>
-    );
-  }
-
-  if (loadStatus === "error") {
-    return (
-      <div>
-        {navButtons}
-        <main>
-          <p role="alert">{loadError}</p>
-        </main>
-      </div>
-    );
-  }
-
   return (
     <div>
-      {navButtons}
-
+      {/* ★変更：h1・nav(戻る/店舗登録へ)を削除。
+          タイトルは共通ヘッダー側、Homeへの導線もそちらに移したため。 */}
       <main>
-        <h1>メニュー登録</h1>
+        {/* ★追加：place_idは表示せず、店舗名だけを文脈として表示する */}
+        <p>
+          「<strong>{storeName}</strong>」にメニューを登録します。
+        </p>
 
         <form onSubmit={handleSubmit}>
-          <fieldset>
-            <legend>店舗</legend>
-            <select
-              value={placeId}
-              onChange={(e) => setPlaceId(e.target.value)}
-              required
-            >
-              <option value="" disabled>
-                店舗を選択してください
-              </option>
-              {stores.map((store) => (
-                <option key={store.place_id} value={store.place_id}>
-                  {store.title}
-                </option>
-              ))}
-            </select>
-          </fieldset>
-
           <label>
             メニュー名（{MENU_NAME_MAX_LENGTH}文字以内）
             <input
@@ -243,14 +144,14 @@ export function RegisterMenuPage({ onNavigate }: RegisterMenuPageProps) {
             />
           </label>
 
-          <label>
-            写真（任意）
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-            />
-          </label>
+          {/* ★変更：プレビュー＋回転ボタン付きの共有コンポーネントに置き換え */}
+          <ImagePickerWithRotation
+            label="写真（任意）"
+            file={imageFile}
+            rotation={imageRotation}
+            onFileChange={setImageFile}
+            onRotationChange={setImageRotation}
+          />
 
           <button
             type="submit"
@@ -260,9 +161,6 @@ export function RegisterMenuPage({ onNavigate }: RegisterMenuPageProps) {
           </button>
         </form>
 
-        {submitStatus === "success" && (
-          <p role="status">メニューを登録しました。</p>
-        )}
         {submitStatus === "error" && <p role="alert">{submitError}</p>}
       </main>
     </div>

@@ -129,6 +129,41 @@ section {
   border-top: 1px solid var(--line);
 }
 
+/* ---- 共通ヘッダー(常に画面上部に固定表示される) ---- */
+header.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  background: var(--charcoal);
+  padding: 0 16px;
+  z-index: 1000;
+}
+
+.app-header__title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+  font-size: 20px;
+  color: var(--paper);
+}
+
+.app-header__home-button {
+  position: relative;
+  z-index: 1;
+}
+
+/* 固定ヘッダーの高さ分、本体コンテンツを下にずらす */
+.content-area {
+  padding-top: 60px;
+}
+
 /* ---- ナビゲーション（画面遷移ボタンの並び） ---- */
 nav {
   display: flex;

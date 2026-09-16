@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に合わせてパスを調整してください
+import { ImagePickerWithRotation } from "../components/ImagePickerWithRotation"; // 実際の配置場所に合わせてパスを調整してください
 
-// このモーダルが必要とするメニュー情報だけを定義(呼び出し元の型に依存しない)
 interface MenuForUpdate {
   menu_id: string;
   menu_name: string;
@@ -18,13 +18,8 @@ interface UpdateMenuModalProps {
 
 type Status = "idle" | "loading" | "error";
 
-const MENU_NAME_MAX_LENGTH = 30; // RegistMenu.py: MAX_MENU_NAME_LENGTH = 30
+const MENU_NAME_MAX_LENGTH = 30;
 
-// ------------------------------------------------------------
-// エラーメッセージの読み取り
-// UpdateMenu.py は 400/404 のときはJSON({"message": "..."})、
-// 401のときはプレーン文字列を返すので、両方に対応できるようにする
-// ------------------------------------------------------------
 async function readErrorMessage(res: Response): Promise<string> {
   const rawText = await res.text();
   try {
@@ -50,21 +45,22 @@ export function UpdateMenuModal({
   const [price, setPrice] = useState(String(menu.price));
   const [memo, setMemo] = useState(menu.memo);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  // ★追加：画像の回転角度(0/90/180/270)
+  const [imageRotation, setImageRotation] = useState(0);
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // モーダルを開くたびに、その時点のメニュー情報でフォームを初期化し直す
   useEffect(() => {
     if (!isOpen) return;
     setMenuName(menu.menu_name);
     setPrice(String(menu.price));
     setMemo(menu.memo);
     setImageFile(null);
+    setImageRotation(0);
     setStatus("idle");
     setErrorMessage(null);
   }, [isOpen, menu]);
 
-  // <dialog>要素の開閉を、親から渡されるisOpenと同期させる
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
@@ -95,7 +91,7 @@ export function UpdateMenuModal({
 
       // 画像を選び直した場合のみアップロードし、image_urlを送る
       const image_url = imageFile
-        ? await uploadImage(imageFile, "menus")
+        ? await uploadImage(imageFile, "menus", imageRotation)
         : undefined;
 
       const res = await fetch(apiUrl, {
@@ -160,14 +156,14 @@ export function UpdateMenuModal({
           />
         </label>
 
-        <label>
-          写真を差し替える（任意）
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-          />
-        </label>
+        {/* ★変更：プレビュー＋回転ボタン付きの共有コンポーネントに置き換え */}
+        <ImagePickerWithRotation
+          label="写真を差し替える（任意）"
+          file={imageFile}
+          rotation={imageRotation}
+          onFileChange={setImageFile}
+          onRotationChange={setImageRotation}
+        />
 
         {status === "error" && <p role="alert">{errorMessage}</p>}
 

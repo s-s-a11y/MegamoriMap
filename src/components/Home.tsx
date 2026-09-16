@@ -12,7 +12,7 @@ type Store = {
   longitude: number;
   latitude: number;
   store_category_name: string;
-  image_url: string; // ★カード表示用に追加。ShowMegaMap.py側の対応が必要(本文参照)
+  image_url: string;
 };
 
 const ALL_CATEGORIES = "";
@@ -27,6 +27,7 @@ interface HomePageProps {
   onNavigate: (
     view: "map" | "regist-store" | "regist-menu" | "store-detail",
     placeId?: string,
+    storeName?: string,
   ) => void;
 }
 
@@ -34,7 +35,6 @@ export function HomePage({ onNavigate }: HomePageProps) {
   //   店舗情報格納用State
   const [stores, setStores] = useState<Store[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>(ALL_CATEGORIES);
-  // ★追加：ページング用State(何ページ目を表示中か。1始まり)
   const [currentPage, setCurrentPage] = useState(1);
 
   //   画面表示時に一度だけ店舗情報を取得する
@@ -69,15 +69,13 @@ export function HomePage({ onNavigate }: HomePageProps) {
     );
   }, [stores, categoryFilter]);
 
-  // ★追加：絞り込み条件が変わったら1ページ目に戻す
-  // (直前のページ番号のままだと、絞り込んだ結果ページが存在しなくなることがあるため)
+  // 絞り込み条件が変わったら1ページ目に戻す
   useEffect(() => {
     setCurrentPage(1);
   }, [categoryFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredStores.length / PAGE_SIZE));
 
-  // ★追加：現在のページ番号分だけ切り出す
   const pagedStores = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
     return filteredStores.slice(start, start + PAGE_SIZE);
@@ -99,19 +97,16 @@ export function HomePage({ onNavigate }: HomePageProps) {
 
   return (
     <div>
+      {/* ★変更：「メニューを登録する」ボタンを削除。
+          メニュー登録は店舗詳細画面から行う形式に変更したため。
+          タイトル(h1)も共通ヘッダー側に移したため、ここでは持たない。 */}
       <nav>
         <button onClick={() => onNavigate("regist-store")}>
           店舗を登録する
         </button>
-        <button onClick={() => onNavigate("regist-menu")}>
-          メニューを登録する
-        </button>
       </nav>
 
-      {/* ★変更：home-mainクラスを付けて、この画面だけ幅の制限を広げる */}
       <main className="home-main">
-        <h1>メガ盛りマップ</h1>
-
         {/* カテゴリー絞り込み */}
         <label>
           カテゴリーで絞り込み
@@ -125,7 +120,6 @@ export function HomePage({ onNavigate }: HomePageProps) {
           </select>
         </label>
 
-        {/* ★変更：テーブルの代わりにカードグリッドで表示 */}
         <ul className="store-grid">
           {pagedStores.map((store) => (
             <li key={store.place_id} className="store-card">
@@ -158,7 +152,6 @@ export function HomePage({ onNavigate }: HomePageProps) {
           ))}
         </ul>
 
-        {/* ★追加：ページング */}
         <div className="pagination">
           <button onClick={goToPrevPage} disabled={currentPage <= 1}>
             ← 前へ

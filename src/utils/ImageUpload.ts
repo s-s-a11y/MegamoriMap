@@ -9,29 +9,60 @@ interface IssueUploadUrlResponse {
   image_url: string;
 }
 
+// createImageBitmapでEXIF方向補正を試みる。
+//
+// 古いバージョンのSafariでは、"from-image"という値自体を認識できず、
+// エラーになることがある(WebKit側でこの名前が導入されたのは2023年頃で、
+// それ以前は挙動自体は近いが名称が違った)。そのため、まず現行の正しい
+// 書き方を試し、失敗したらオプション無し(各ブラウザの既定の挙動に任せる)で
+// フォールバックする。
+async function createOrientedImageBitmap(file: File): Promise<ImageBitmap> {
+  try {
+    return await createImageBitmap(file, { imageOrientation: "from-image" });
+  } catch {
+    return await createImageBitmap(file);
+  }
+}
+
 // 画像ファイルを長辺MAX_IMAGE_DIMENSION以内に収まるようリサイズし、
-// JPEGのBlobに変換する。
-async function resizeImageToJpegBlob(file: File): Promise<Blob> {
-  // imageOrientation: "from-image" を明示することで、スマホを横向きにして
-  // 撮った写真のEXIF方向情報を確実に反映させる(指定しないとブラウザによっては
-  // 生のセンサーデータのまま扱われ、被写体が横倒しで保存されることがある)
-  const imageBitmap = await createImageBitmap(file, {
-    imageOrientation: "from-image",
-  });
+// ユーザーが指定した回転(0/90/180/270度)を焼き込んだ上で、JPEGのBlobに変換する。
+async function resizeImageToJpegBlob(
+  file: File,
+  rotationDegrees: number = 0,
+): Promise<Blob> {
+  const imageBitmap = await createOrientedImageBitmap(file);
   const scale = Math.min(
     1,
     MAX_IMAGE_DIMENSION / Math.max(imageBitmap.width, imageBitmap.height),
   );
+  const scaledWidth = Math.round(imageBitmap.width * scale);
+  const scaledHeight = Math.round(imageBitmap.height * scale);
+
+  // 0〜359の範囲に正規化しておく(負の値や360以上が来ても壊れないように)
+  const rotation = ((rotationDegrees % 360) + 360) % 360;
+  // 90度・270度回転の場合は、キャンバス自体の縦横を入れ替える必要がある
+  const swapDimensions = rotation === 90 || rotation === 270;
 
   const canvas = document.createElement("canvas");
-  canvas.width = Math.round(imageBitmap.width * scale);
-  canvas.height = Math.round(imageBitmap.height * scale);
+  canvas.width = swapDimensions ? scaledHeight : scaledWidth;
+  canvas.height = swapDimensions ? scaledWidth : scaledHeight;
 
   const ctx = canvas.getContext("2d");
   if (!ctx) {
     throw new Error("画像の処理に失敗しました");
   }
-  ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height);
+
+  // キャンバスの中心を軸に回転させてから、中心が(0,0)になるように
+  // 画像を描画する(結果として、回転後もキャンバスの中央に収まる)
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.rotate((rotation * Math.PI) / 180);
+  ctx.drawImage(
+    imageBitmap,
+    -scaledWidth / 2,
+    -scaledHeight / 2,
+    scaledWidth,
+    scaledHeight,
+  );
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -44,15 +75,21 @@ async function resizeImageToJpegBlob(file: File): Promise<Blob> {
 }
 
 /**
- * 画像ファイルをリサイズしたうえで、署名付きURL経由でS3へ直接アップロードする。
+ * 画像ファイルをリサイズ・回転したうえで、署名付きURL経由でS3へ直接アップロードする。
  *
  * @param file 選択された画像ファイル
  * @param folder S3上でのフォルダ分けのためだけの値(例: "stores", "menus")。
  *               DB上の紐づけとは無関係で、単なる整理用。
+ * @param rotationDegrees ユーザーがプレビュー画面で指定した追加の回転角度
+ *                        (0/90/180/270)。指定が無ければ0(回転無し)。
  * @returns アップロード完了後、DBに保存すべき画像の公開URL
  */
-export async function uploadImage(file: File, folder: string): Promise<string> {
-  const blob = await resizeImageToJpegBlob(file);
+export async function uploadImage(
+  file: File,
+  folder: string,
+  rotationDegrees: number = 0,
+): Promise<string> {
+  const blob = await resizeImageToJpegBlob(file, rotationDegrees);
 
   const issueUrlApiUrl =
     "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/images/upload-url";

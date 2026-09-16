@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に合わせてパスを調整してください
+import { ImagePickerWithRotation } from "./ImagePickerWithRotation"; // 実際の配置場所に合わせてパスを調整してください
 
 // 店舗検索API（SearchStore）が返す検索結果1件分
-// = Amazon Location Serviceの検索結果をそのまま返している
 interface SearchResult {
   PlaceId: string;
   Title: string;
@@ -22,7 +22,11 @@ type Status = "idle" | "loading" | "success" | "error";
 
 // App.tsx から画面切り替え関数を受け取るためのprops
 interface RegisterStorePageProps {
-  onNavigate: (view: "map" | "regist-store" | "regist-menu") => void;
+  onNavigate: (
+    view: "map" | "regist-store" | "regist-menu",
+    placeId?: string,
+    storeName?: string,
+  ) => void;
 }
 
 // 池袋駅付近。現在地が取得できるまでの初期値、および取得に失敗した場合の保険として使う。
@@ -30,8 +34,6 @@ const FALLBACK_SEARCH_ORIGIN = { longitude: 139.7109, latitude: 35.7295 };
 
 // ------------------------------------------------------------
 // エラーメッセージの読み取り
-// RegistStore.py は 400/409 のときはJSON({"message": "..."})、
-// 500のときはプレーン文字列を返すので、両方に対応できるようにする
 // ------------------------------------------------------------
 async function readErrorMessage(res: Response): Promise<string> {
   const rawText = await res.text();
@@ -48,16 +50,13 @@ async function readErrorMessage(res: Response): Promise<string> {
 
 // 店舗登録用ページ
 export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
-  // カテゴリー格納用配列State
   const [categories, setCategories] = useState<string[]>([]);
-  // 現在地格納用State
   const [position, setPosition] = useState<Position>({
     latitude: null,
     longitude: null,
   });
-  // 画面表示と同時に現在地をブラウザから、店舗のカテゴリをAWSから取得する
+
   useEffect(() => {
-    // 現在地の取得
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setPosition({
@@ -66,20 +65,19 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
         });
       },
       (err) => {
-        // 取得失敗（許可されなかった等）の場合はログだけ残し、FALLBACK_SEARCH_ORIGINを使い続ける
         console.warn(
           "現在地の取得に失敗しました。デフォルトの座標を使用します。",
           err,
         );
       },
     );
-    // 店舗のカテゴリを取得、データがなければから配列として扱う
     fetch(
       "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/categories/stores",
     )
       .then((res) => res.json())
       .then((data) => setCategories(data.categories ?? []));
   }, []);
+
   // ---- 検索まわりの状態 ----
   const [keyword, setKeyword] = useState("");
   const [searchStatus, setSearchStatus] = useState<Status>("idle");
@@ -95,6 +93,8 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
   // ---- コメント・画像まわりの状態 ----
   const [comment, setComment] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
+  // ★追加：画像の回転角度(0/90/180/270)
+  const [imageRotation, setImageRotation] = useState(0);
 
   // ---- カテゴリー作成モーダルまわりの状態 ----
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -104,12 +104,9 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
   const [categoryRegistError, setCategoryRegistError] = useState<string | null>(
     null,
   );
-  // ネイティブ<dialog>要素の開閉をJSから制御するための参照
   const categoryDialogRef = useRef<HTMLDialogElement | null>(null);
 
-  // 「検索」ボタンが押されたときの処理
   const handleSearch = async (e: React.SubmitEvent<HTMLFormElement>) => {
-    // ページリロードの防止
     e.preventDefault();
     if (!keyword.trim()) return;
 
@@ -122,13 +119,11 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
       const apiUrl =
         "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores/search";
 
-      // 現在地が取れていればそれを使い、まだなければフォールバック座標を使う
       const origin =
         position.longitude !== null && position.latitude !== null
           ? { longitude: position.longitude, latitude: position.latitude }
           : FALLBACK_SEARCH_ORIGIN;
 
-      // Lambda関数　SearchStoreに接続
       const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -164,14 +159,11 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
       const apiUrl =
         "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores";
 
-      // 画像が選ばれていれば、共有ユーティリティでリサイズ→S3へ直接アップロードする
+      // 画像が選ばれていれば、共有ユーティリティでリサイズ・回転→S3へ直接アップロードする
       const image_url = imageFile
-        ? await uploadImage(imageFile, "stores")
+        ? await uploadImage(imageFile, "stores", imageRotation)
         : undefined;
 
-      // RegistStore.py の check_input() が読む形に合わせる：
-      // PlaceId / Title / Position はそのまま、
-      // 住所は Address.Label というネスト構造で送る
       const res = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -189,16 +181,14 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
       });
 
       if (!res.ok) {
-        // 409: 既に登録済みの店舗の場合、専用のメッセージにする
         if (res.status === 409) {
           throw new Error("この店舗はすでに登録されています。");
         }
         throw new Error(await readErrorMessage(res));
       }
 
-      setRegistStatus("success");
-      setComment("");
-      setImageFile(null);
+      // ★変更：成功メッセージを出して留まるのではなく、Home画面へ即座に遷移する
+      onNavigate("map");
     } catch (err) {
       setRegistError(err instanceof Error ? err.message : "登録に失敗しました");
       setRegistStatus("error");
@@ -209,7 +199,6 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
     setCategory(e.target.value);
   };
 
-  // モーダルを開く。前回の入力内容・エラー・成功状態を初期化してから開く。
   const openCategoryModal = () => {
     setNewCategoryName("");
     setCategoryRegistStatus("idle");
@@ -221,9 +210,6 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
     setIsCategoryModalOpen(false);
   };
 
-  // isCategoryModalOpenの変化に合わせて<dialog>のshowModal()/close()を呼ぶ。
-  // <dialog>はopen属性だけを付けても背景の暗転(::backdrop)やEscでの
-  // クローズが効かないため、正しいモーダル動作にはJSからの呼び出しが必要。
   useEffect(() => {
     const dialog = categoryDialogRef.current;
     if (!dialog) return;
@@ -234,7 +220,6 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
     }
   }, [isCategoryModalOpen]);
 
-  // 「登録」ボタンが押されたときの処理（カテゴリー作成API: RegistStoreCategory）
   const handleCreateCategory = async (
     e: React.SubmitEvent<HTMLFormElement>,
   ) => {
@@ -255,13 +240,10 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
         body: JSON.stringify({ store_category_name: trimmedName }),
       });
 
-      // 409は「そのカテゴリー名は既に存在する」という意味なので、
-      // エラー扱いにせず、そのまま既存のカテゴリーとして使う。
       if (!res.ok && res.status !== 409) {
         throw new Error(await readErrorMessage(res));
       }
 
-      // 一覧にまだ無ければ追加し、作成したカテゴリーを選択状態にする
       setCategories((prev) =>
         prev.includes(trimmedName) ? prev : [...prev, trimmedName],
       );
@@ -279,17 +261,9 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
 
   return (
     <div>
-      {/* 他の画面への移動ボタン */}
-      <nav>
-        <button onClick={() => onNavigate("map")}>← 戻る</button>
-        <button onClick={() => onNavigate("regist-menu")}>
-          メニュー登録へ
-        </button>
-      </nav>
-
+      {/* ★変更：h1・nav(戻る/メニュー登録へ)を削除。
+          タイトルは共通ヘッダー側、Homeへの導線もそちらに移したため。 */}
       <main>
-        <h1>店舗登録</h1>
-
         {/* --- 検索フォーム --- */}
         <search>
           <form onSubmit={handleSearch}>
@@ -366,14 +340,14 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
               />
             </label>
 
-            <label>
-              写真（任意）
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-              />
-            </label>
+            {/* ★変更：プレビュー＋回転ボタン付きの共有コンポーネントに置き換え */}
+            <ImagePickerWithRotation
+              label="写真（任意）"
+              file={imageFile}
+              rotation={imageRotation}
+              onFileChange={setImageFile}
+              onRotationChange={setImageRotation}
+            />
 
             <button type="submit" disabled={registStatus === "loading"}>
               {registStatus === "loading" ? "登録中..." : "この店舗を登録する"}
@@ -381,9 +355,6 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
           </form>
         )}
 
-        {registStatus === "success" && (
-          <p role="status">店舗を登録しました。</p>
-        )}
         {registStatus === "error" && <p role="alert">{registError}</p>}
       </main>
 
@@ -392,9 +363,6 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
         ref={categoryDialogRef}
         onClose={closeCategoryModal}
         onClick={(e) => {
-          // ダイアログの外周(背景)をクリックした時だけ閉じる。
-          // 内側の要素をクリックした場合は e.target がその子要素になるため、
-          // e.currentTarget(dialog自身)と一致する時だけ閉じる判定にしている。
           if (e.target === e.currentTarget) closeCategoryModal();
         }}
       >

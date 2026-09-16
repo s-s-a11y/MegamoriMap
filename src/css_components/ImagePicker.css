@@ -1,0 +1,36 @@
+/*
+  ImagePickerWithRotation.tsx 専用のスタイル。
+  プレビュー画像を正方形の枠に収め、90度回転させても大きくはみ出さないようにする。
+*/
+
+.image-picker__preview-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.image-picker__preview-box {
+  width: 200px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper-soft);
+}
+
+.image-picker__preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0;
+  transition: transform 0.2s ease;
+}
+
+.image-picker__rotate-buttons {
+  display: flex;
+  gap: 8px;
+}
