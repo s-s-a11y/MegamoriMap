@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
+import { useAuth } from "react-oidc-context";
 import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に合わせてパスを調整してください
 import { ImagePickerWithRotation } from "./ImagePickerWithRotation"; // 実際の配置場所に合わせてパスを調整してください
+import { buildAuthHeaders } from "../utils/authHeaders"; // 実際の配置場所に合わせてパスを調整してください
 
 // 店舗検索API（SearchStore）が返す検索結果1件分
 interface SearchResult {
@@ -50,6 +52,9 @@ async function readErrorMessage(res: Response): Promise<string> {
 
 // 店舗登録用ページ
 export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
+  // ★追加：書き込み系のAPI呼び出しに使うIDトークンを取得する
+  const auth = useAuth();
+
   const [categories, setCategories] = useState<string[]>([]);
   const [position, setPosition] = useState<Position>({
     latitude: null,
@@ -161,12 +166,17 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
 
       // 画像が選ばれていれば、共有ユーティリティでリサイズ・回転→S3へ直接アップロードする
       const image_url = imageFile
-        ? await uploadImage(imageFile, "stores", imageRotation)
+        ? await uploadImage(
+            imageFile,
+            "stores",
+            imageRotation,
+            auth.user?.id_token,
+          )
         : undefined;
 
       const res = await fetch(apiUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: buildAuthHeaders(auth.user?.id_token),
         body: JSON.stringify({
           PlaceId: selected.PlaceId,
           Title: selected.Title,
@@ -349,7 +359,16 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
               onRotationChange={setImageRotation}
             />
 
-            <button type="submit" disabled={registStatus === "loading"}>
+            {!auth.isAuthenticated && (
+              <p role="alert">
+                店舗を登録するには、右上の「ログイン」から先にログインしてください。
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={registStatus === "loading" || !auth.isAuthenticated}
+            >
               {registStatus === "loading" ? "登録中..." : "この店舗を登録する"}
             </button>
           </form>

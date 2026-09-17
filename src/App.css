@@ -159,6 +159,12 @@ header.app-header {
   z-index: 1;
 }
 
+.app-header__auth {
+  margin-left: auto;
+  position: relative;
+  z-index: 1;
+}
+
 /* 固定ヘッダーの高さ分、本体コンテンツを下にずらす */
 .content-area {
   padding-top: 60px;

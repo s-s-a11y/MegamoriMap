@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useAuth } from "react-oidc-context";
 import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に合わせてパスを調整してください
 import { ImagePickerWithRotation } from "./ImagePickerWithRotation"; // 実際の配置場所に合わせてパスを調整してください
+import { buildAuthHeaders } from "../utils/authHeaders"; // 実際の配置場所に合わせてパスを調整してください
 
 type SubmitStatus = "idle" | "loading" | "error";
 
@@ -39,6 +41,9 @@ export function RegisterMenuPage({
   storeName,
   onNavigate,
 }: RegisterMenuPageProps) {
+  // ★追加：書き込み系のAPI呼び出しに使うIDトークンを取得する
+  const auth = useAuth();
+
   // ---- 入力フォームの状態 ----
   const [menuName, setMenuName] = useState("");
   const [price, setPrice] = useState("");
@@ -74,12 +79,17 @@ export function RegisterMenuPage({
 
       // 画像が選ばれていれば、共有ユーティリティでリサイズ・回転→S3へ直接アップロードする
       const image_url = imageFile
-        ? await uploadImage(imageFile, "menus", imageRotation)
+        ? await uploadImage(
+            imageFile,
+            "menus",
+            imageRotation,
+            auth.user?.id_token,
+          )
         : undefined;
 
       const res = await fetch(apiUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: buildAuthHeaders(auth.user?.id_token),
         body: JSON.stringify({
           menu_name: menuName,
           place_id: placeId,
@@ -153,9 +163,19 @@ export function RegisterMenuPage({
             onRotationChange={setImageRotation}
           />
 
+          {!auth.isAuthenticated && (
+            <p role="alert">
+              メニューを登録するには、右上の「ログイン」から先にログインしてください。
+            </p>
+          )}
+
           <button
             type="submit"
-            disabled={!isFormValid || submitStatus === "loading"}
+            disabled={
+              !isFormValid ||
+              submitStatus === "loading" ||
+              !auth.isAuthenticated
+            }
           >
             {submitStatus === "loading" ? "登録中..." : "メニューを登録する"}
           </button>

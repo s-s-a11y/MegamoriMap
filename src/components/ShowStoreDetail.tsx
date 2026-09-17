@@ -1,7 +1,9 @@
 import { useEffect, useState, useRef } from "react";
+import { useAuth } from "react-oidc-context";
 import { formatBudgetBand } from "../utils/FormatPrice"; // 実際の配置場所に合わせてパスを調整してください
 import { UpdateStoreModal } from "../modal/UpdateStoreModal"; // 実際の配置場所に合わせてパスを調整してください
 import { UpdateMenuModal } from "../modal/UpdateMenuModal"; // 実際の配置場所に合わせてパスを調整してください
+import { buildAuthHeaders } from "../utils/authHeaders"; // 実際の配置場所に合わせてパスを調整してください
 import "../css_components/ShowStoreDetail.css";
 // maplibre-glをインポート(V6対応版)
 import * as maplibregl from "maplibre-gl";
@@ -80,6 +82,9 @@ async function readErrorMessage(res: Response): Promise<string> {
 }
 
 export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
+  // ★追加：書き込み系のAPI呼び出しに使うIDトークンを取得する
+  const auth = useAuth();
+
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
@@ -306,7 +311,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
 
       const res = await fetch(apiUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: buildAuthHeaders(auth.user?.id_token),
         body: JSON.stringify({ place_id: store.place_id, comment: newComment }),
       });
 
@@ -338,7 +343,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
 
       const res = await fetch(apiUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: buildAuthHeaders(auth.user?.id_token),
         body: JSON.stringify({ place_id: store.place_id }),
       });
 
@@ -368,7 +373,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
 
       const res = await fetch(apiUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: buildAuthHeaders(auth.user?.id_token),
         body: JSON.stringify({ menu_id: menuPendingDelete.menu_id }),
       });
 
@@ -403,14 +408,27 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
           </button>
 
           <div className="detail-actions">
-            <button onClick={() => setIsUpdateStoreModalOpen(true)}>
+            <button
+              onClick={() => setIsUpdateStoreModalOpen(true)}
+              disabled={!auth.isAuthenticated}
+            >
               更新
             </button>
-            <button onClick={() => setIsStoreDeleteConfirmOpen(true)}>
+            <button
+              onClick={() => setIsStoreDeleteConfirmOpen(true)}
+              disabled={!auth.isAuthenticated}
+            >
               削除
             </button>
           </div>
         </nav>
+      )}
+
+      {!auth.isAuthenticated && (
+        <p role="alert">
+          店舗・メニューの登録や編集を行うには、右上の「ログイン」から先に
+          ログインしてください（閲覧は誰でも可能です）。
+        </p>
       )}
 
       <main>
@@ -505,7 +523,11 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
 
               <button
                 type="submit"
-                disabled={addCommentStatus === "loading" || !newComment.trim()}
+                disabled={
+                  addCommentStatus === "loading" ||
+                  !newComment.trim() ||
+                  !auth.isAuthenticated
+                }
               >
                 {addCommentStatus === "loading"
                   ? "追加中..."
@@ -536,13 +558,20 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                       <img src={menu.image_url} alt={menu.menu_name} />
                     )}
                     <strong>{menu.menu_name}</strong>
-                    <br />
                     <span>¥{menu.price.toLocaleString()}</span>
                     {menu.memo && <p>{menu.memo}</p>}
 
                     <div className="menu-card-actions">
-                      <button onClick={() => setEditingMenu(menu)}>更新</button>
-                      <button onClick={() => setMenuPendingDelete(menu)}>
+                      <button
+                        onClick={() => setEditingMenu(menu)}
+                        disabled={!auth.isAuthenticated}
+                      >
+                        更新
+                      </button>
+                      <button
+                        onClick={() => setMenuPendingDelete(menu)}
+                        disabled={!auth.isAuthenticated}
+                      >
                         削除
                       </button>
                     </div>
@@ -583,7 +612,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
           <button
             type="button"
             onClick={handleConfirmDeleteStore}
-            disabled={storeDeleteStatus === "loading"}
+            disabled={storeDeleteStatus === "loading" || !auth.isAuthenticated}
           >
             {storeDeleteStatus === "loading" ? "削除中..." : "削除する"}
           </button>
@@ -617,7 +646,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
           <button
             type="button"
             onClick={handleConfirmDeleteMenu}
-            disabled={menuDeleteStatus === "loading"}
+            disabled={menuDeleteStatus === "loading" || !auth.isAuthenticated}
           >
             {menuDeleteStatus === "loading" ? "削除中..." : "削除する"}
           </button>

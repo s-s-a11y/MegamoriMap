@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "react-oidc-context";
 import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に合わせてパスを調整してください
 import { ImagePickerWithRotation } from "../components/ImagePickerWithRotation"; // 実際の配置場所に合わせてパスを調整してください
+import { buildAuthHeaders } from "../utils/authHeaders"; // 実際の配置場所に合わせてパスを調整してください
 
 interface MenuForUpdate {
   menu_id: string;
@@ -40,6 +42,8 @@ export function UpdateMenuModal({
   onUpdated,
 }: UpdateMenuModalProps) {
   const dialogRef = useRef<HTMLDialogElement | null>(null);
+  // ★追加：書き込み系のAPI呼び出しに使うIDトークンを取得する
+  const auth = useAuth();
 
   const [menuName, setMenuName] = useState(menu.menu_name);
   const [price, setPrice] = useState(String(menu.price));
@@ -91,12 +95,17 @@ export function UpdateMenuModal({
 
       // 画像を選び直した場合のみアップロードし、image_urlを送る
       const image_url = imageFile
-        ? await uploadImage(imageFile, "menus", imageRotation)
+        ? await uploadImage(
+            imageFile,
+            "menus",
+            imageRotation,
+            auth.user?.id_token,
+          )
         : undefined;
 
       const res = await fetch(apiUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: buildAuthHeaders(auth.user?.id_token),
         body: JSON.stringify({
           menu_id: menu.menu_id,
           menu_name: menuName,
@@ -171,7 +180,12 @@ export function UpdateMenuModal({
           <button type="button" onClick={onClose}>
             キャンセル
           </button>
-          <button type="submit" disabled={!isFormValid || status === "loading"}>
+          <button
+            type="submit"
+            disabled={
+              !isFormValid || status === "loading" || !auth.isAuthenticated
+            }
+          >
             {status === "loading" ? "更新中..." : "更新する"}
           </button>
         </div>

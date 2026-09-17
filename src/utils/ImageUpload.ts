@@ -82,12 +82,16 @@ async function resizeImageToJpegBlob(
  *               DB上の紐づけとは無関係で、単なる整理用。
  * @param rotationDegrees ユーザーがプレビュー画面で指定した追加の回転角度
  *                        (0/90/180/270)。指定が無ければ0(回転無し)。
+ * @param idToken CognitoのIDトークン。/images/upload-url が認証必須になったため、
+ *                呼び出し元(useAuth()を使えるコンポーネント側)から渡してもらう。
+ *                ※Authorizationヘッダーには"Bearer "を付けない(API Gateway側の仕様)
  * @returns アップロード完了後、DBに保存すべき画像の公開URL
  */
 export async function uploadImage(
   file: File,
   folder: string,
   rotationDegrees: number = 0,
+  idToken?: string,
 ): Promise<string> {
   const blob = await resizeImageToJpegBlob(file, rotationDegrees);
 
@@ -96,7 +100,10 @@ export async function uploadImage(
 
   const issueRes = await fetch(issueUrlApiUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(idToken ? { Authorization: idToken } : {}),
+    },
     body: JSON.stringify({ content_type: "image/jpeg", folder }),
   });
 
