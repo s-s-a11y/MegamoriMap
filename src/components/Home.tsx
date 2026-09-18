@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "react-oidc-context";
-import { formatBudgetBand } from "../utils/FormatPrice"; // 実際の配置場所に合わせてパスを調整してください
+import { formatBudgetBand, getBudgetSourcePrice } from "../utils/FormatPrice"; // 実際の配置場所に合わせてパスを調整してください
 import "../css_components/Home.css";
 
 // 店舗情報格納用typeの定義
@@ -16,6 +15,8 @@ type Store = {
   image_url: string;
   // ★追加：昼/晩の絞り込み用(居酒屋対応)
   meal_time: "lunch" | "dinner";
+  // ★追加：夜(dinner)の店の予算帯表示に使う、申告額の平均
+  price_per_person: number;
 };
 
 const ALL_CATEGORIES = "";
@@ -42,7 +43,6 @@ interface HomePageProps {
 }
 
 export function HomePage({ onNavigate }: HomePageProps) {
-  const auth = useAuth();
   //   店舗情報格納用State
   const [stores, setStores] = useState<Store[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>(ALL_CATEGORIES);
@@ -126,10 +126,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
           メニュー登録は店舗詳細画面から行う形式に変更したため。
           タイトル(h1)も共通ヘッダー側に移したため、ここでは持たない。 */}
       <nav>
-        <button
-          disabled={!auth.isAuthenticated}
-          onClick={() => onNavigate("regist-store")}
-        >
+        <button onClick={() => onNavigate("regist-store")}>
           店舗を登録する
         </button>
       </nav>
@@ -179,7 +176,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
                   {MEAL_TIME_LABELS[store.meal_time] ?? store.meal_time}
                 </span>
                 <span className="store-card__price">
-                  {formatBudgetBand(store.avg_price)}
+                  {formatBudgetBand(getBudgetSourcePrice(store))}
                 </span>
                 <button
                   className="store-card__button"

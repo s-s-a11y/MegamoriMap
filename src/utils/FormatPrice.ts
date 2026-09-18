@@ -19,3 +19,22 @@ export function formatBudgetBand(avgPrice: number): string {
 
   return `¥${lower.toLocaleString()}〜¥${upper.toLocaleString()}`;
 }
+
+/**
+ * ★追加：昼(lunch)の店はメニュー価格の平均(avg_price)、
+ * 夜(dinner)の店は来店者からの申告額の平均(price_per_person)を、
+ * それぞれ「予算帯」の算出元として使う。
+ *
+ * 1人1品が基本の昼の店と、複数品を一緒に注文する夜の店とでは、
+ * メニュー価格の単純平均をそのまま予算帯に使うと実態と合わないため、
+ * 夜の店だけ別の計算元(申告額)に切り替えている。
+ */
+export function getBudgetSourcePrice(store: {
+  meal_time: string;
+  avg_price: number;
+  price_per_person: number;
+}): number {
+  return store.meal_time === "dinner"
+    ? store.price_per_person
+    : store.avg_price;
+}

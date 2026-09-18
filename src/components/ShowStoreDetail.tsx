@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "react-oidc-context";
-import { formatBudgetBand } from "../utils/FormatPrice"; // 実際の配置場所に合わせてパスを調整してください
+import { formatBudgetBand, getBudgetSourcePrice } from "../utils/FormatPrice"; // 実際の配置場所に合わせてパスを調整してください
 import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に合わせてパスを調整してください
 import { UpdateStoreModal } from "../modal/UpdateStoreModal"; // 実際の配置場所に合わせてパスを調整してください
 import { UpdateMenuModal } from "../modal/UpdateMenuModal"; // 実際の配置場所に合わせてパスを調整してください
@@ -35,6 +35,12 @@ interface StoreImage {
   posted_at: string;
 }
 
+// 使った金額の申告1件分(ShowStoreDetail.py / AddPriceReport.pyの1件と一致)
+interface StorePriceReport {
+  amount: number;
+  posted_at: string;
+}
+
 // ShowStoreDetail Lambdaが返す、1店舗分の詳細情報
 interface StoreDetail {
   place_id: string;
@@ -53,6 +59,9 @@ interface StoreDetail {
   meal_time: "lunch" | "dinner";
   // ★追加：Amazon Location Serviceから自動取得した営業時間(無ければ空配列)
   business_hours: string[];
+  // ★追加：夜(dinner)の店の予算帯表示に使う、申告額の平均と申告一覧
+  price_per_person: number;
+  price_reports: StorePriceReport[];
 }
 
 // meal_timeの値を、画面表示用の日本語に変換する
@@ -159,6 +168,13 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     "idle" | "loading" | "error"
   >("idle");
   const [addCommentError, setAddCommentError] = useState<string | null>(null);
+
+  // ★追加：使った金額の申告フォームまわりの状態(夜の店専用)
+  const [newPriceAmount, setNewPriceAmount] = useState("");
+  const [addPriceStatus, setAddPriceStatus] = useState<
+    "idle" | "loading" | "error"
+  >("idle");
+  const [addPriceError, setAddPriceError] = useState<string | null>(null);
 
   // ---- 画像カルーセルまわりの状態 ----
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -373,6 +389,44 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
         err instanceof Error ? err.message : "画像の追加に失敗しました",
       );
       setAddImageStatus("error");
+    }
+  };
+
+  // ★追加：使った金額(1人あたり)を1件申告する(夜の店専用)
+  const handleAddPriceReport = async (
+    e: React.SubmitEvent<HTMLFormElement>,
+  ) => {
+    e.preventDefault();
+    if (!store || newPriceAmount === "") return;
+
+    setAddPriceStatus("loading");
+    setAddPriceError(null);
+
+    try {
+      const apiUrl =
+        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores/addpricereport";
+
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        headers: buildAuthHeaders(auth.user?.id_token),
+        body: JSON.stringify({
+          place_id: store.place_id,
+          amount: Number(newPriceAmount),
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(await readErrorMessage(res));
+      }
+
+      setNewPriceAmount("");
+      setAddPriceStatus("idle");
+      setStoreRefreshKey((key) => key + 1);
+    } catch (err) {
+      setAddPriceError(
+        err instanceof Error ? err.message : "申告に失敗しました",
+      );
+      setAddPriceStatus("error");
     }
   };
 
@@ -660,7 +714,17 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
               <dd>{store.address_label}</dd>
 
               <dt>予算帯</dt>
-              <dd>{formatBudgetBand(store.avg_price)}</dd>
+              <dd>
+                {formatBudgetBand(getBudgetSourcePrice(store))}
+                {/* ★追加：夜の店は、何に基づく数字かを分かるようにしておく */}
+                {store.meal_time === "dinner" && (
+                  <small>
+                    （来店者
+                    {store.price_reports.length}
+                    件の申告額の平均）
+                  </small>
+                )}
+              </dd>
 
               {store.store_url && (
                 <>
@@ -733,6 +797,54 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                 {addCommentStatus === "loading"
                   ? "追加中..."
                   : "コメントを追加する"}
+              </button>
+            </form>
+          </section>
+        )}
+
+        {/* --- 使った金額の申告(夜の店専用) --- */}
+        {storeStatus === "success" && store && store.meal_time === "dinner" && (
+          <section>
+            <h2>実際に使った金額</h2>
+
+            {store.price_reports.length === 0 && <p>まだ申告はありません。</p>}
+
+            {store.price_reports.length > 0 && (
+              <ul>
+                {store.price_reports.map((report, index) => (
+                  <li key={index}>
+                    <p>¥{report.amount.toLocaleString()} / 人</p>
+                    <small>{report.posted_at}</small>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <form onSubmit={handleAddPriceReport}>
+              <label>
+                実際に使った金額（1人あたり）
+                <input
+                  type="number"
+                  value={newPriceAmount}
+                  min={0}
+                  onChange={(e) => setNewPriceAmount(e.target.value)}
+                  required
+                />
+              </label>
+
+              {addPriceStatus === "error" && (
+                <p role="alert">{addPriceError}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={
+                  addPriceStatus === "loading" ||
+                  newPriceAmount === "" ||
+                  !auth.isAuthenticated
+                }
+              >
+                {addPriceStatus === "loading" ? "申告中..." : "金額を申告する"}
               </button>
             </form>
           </section>

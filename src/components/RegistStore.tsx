@@ -96,6 +96,8 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
   const [category, setCategory] = useState<string>("");
   // ★追加：昼/晩(居酒屋対応)
   const [mealTime, setMealTime] = useState<"lunch" | "dinner" | "">("");
+  // ★追加：夜(dinner)の店で使う、登録者自身が使った金額(任意)
+  const [pricePerPerson, setPricePerPerson] = useState("");
 
   // ---- コメント・画像まわりの状態 ----
   const [comment, setComment] = useState("");
@@ -189,6 +191,11 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
           store_category_name: category,
           comment,
           meal_time: mealTime,
+          // ★追加：夜の店の場合のみ、入力されていれば送る
+          price_per_person:
+            mealTime === "dinner" && pricePerPerson !== ""
+              ? Number(pricePerPerson)
+              : undefined,
           image_url,
         }),
       });
@@ -378,6 +385,20 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
                 晩
               </label>
             </fieldset>
+
+            {/* ★追加：夜の店を選んだ時だけ表示する、使った金額の入力欄(任意) */}
+            {mealTime === "dinner" && (
+              <label>
+                実際に使った金額（1人あたり、任意）
+                <input
+                  type="number"
+                  value={pricePerPerson}
+                  min={0}
+                  onChange={(e) => setPricePerPerson(e.target.value)}
+                  placeholder="例: 4000"
+                />
+              </label>
+            )}
 
             <label>
               コメント（任意）
