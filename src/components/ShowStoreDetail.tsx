@@ -474,7 +474,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
   const galleryImages: string[] = store
     ? [
         ...(store.image_url ? [store.image_url] : []),
-        ...store.images.map((img) => img.image_url),
+        ...(store.images ?? []).map((img) => img.image_url),
       ]
     : [];
   // storeの更新などでgalleryImagesの件数が減った場合に備え、範囲内に収める
