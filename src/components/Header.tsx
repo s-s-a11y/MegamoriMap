@@ -56,7 +56,7 @@ export function Header({ onGoHome }: HeaderProps) {
             TOPに戻る
           </button>
         )}
-        <h1 className="app-header__title">メガ盛りマップ</h1>
+        <h1 className="app-header__title">池ごはんマップ</h1>
 
         <div className="app-header__auth">
           {auth.isAuthenticated ? (
