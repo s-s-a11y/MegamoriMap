@@ -309,10 +309,20 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
               </option>
             ))}
           </select>
-          <button type="button" onClick={openCategoryModal}>
+          <button
+            type="button"
+            onClick={openCategoryModal}
+            disabled={!auth.isAuthenticated}
+          >
             カテゴリを作成する
           </button>
         </fieldset>
+
+        {!auth.isAuthenticated && (
+          <p role="alert">
+            カテゴリの作成には、右上の「ログイン」から先にログインしてください。
+          </p>
+        )}
 
         {/* --- 検索結果一覧（ラジオボタンで1件選ぶ） --- */}
         {results.length > 0 && (
@@ -438,7 +448,9 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
             <button
               type="submit"
               disabled={
-                categoryRegistStatus === "loading" || !newCategoryName.trim()
+                categoryRegistStatus === "loading" ||
+                !newCategoryName.trim() ||
+                !auth.isAuthenticated
               }
             >
               {categoryRegistStatus === "loading" ? "登録中..." : "登録"}

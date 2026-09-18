@@ -408,6 +408,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
       {storeStatus === "success" && store && (
         <nav>
           <button
+            disabled={!auth.isAuthenticated}
             onClick={() =>
               onNavigate("regist-menu", store.place_id, store.title)
             }
