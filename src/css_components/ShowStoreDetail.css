@@ -4,6 +4,66 @@
   ボタン配置・メニューの横スクロール・地図の操作制御をここに書く。
 */
 
+/* ★追加：店舗写真のカルーセル */
+.store-image-carousel {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--paper-soft);
+  /* スワイプ操作中に、ブラウザ側の縦スクロールと競合しにくくする */
+  touch-action: pan-y;
+}
+
+.store-image-carousel img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* 矢印ボタンで切り替わる際の見た目を少し滑らかにする */
+  transition: opacity 0.15s ease;
+}
+
+.store-image-carousel__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(36, 21, 17, 0.55);
+  color: var(--paper-soft);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.store-image-carousel__arrow--left {
+  left: 8px;
+}
+
+.store-image-carousel__arrow--right {
+  right: 8px;
+}
+
+.store-image-carousel__indicator {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(36, 21, 17, 0.55);
+  color: var(--paper-soft);
+  font-size: 12px;
+}
+
+/* ★追加：写真追加フォーム。カルーセルの直下に、少し余白を空けて配置 */
+.store-image-add-form {
+  margin-top: 12px;
+  margin-bottom: 16px;
+}
+
 /* nav内で「メニューを登録する」の右側に、更新・削除ボタンを寄せる */
 .detail-actions {
   display: flex;

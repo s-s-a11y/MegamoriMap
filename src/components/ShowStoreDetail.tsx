@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "react-oidc-context";
 import { formatBudgetBand } from "../utils/FormatPrice"; // 実際の配置場所に合わせてパスを調整してください
+import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に合わせてパスを調整してください
 import { UpdateStoreModal } from "../modal/UpdateStoreModal"; // 実際の配置場所に合わせてパスを調整してください
 import { UpdateMenuModal } from "../modal/UpdateMenuModal"; // 実際の配置場所に合わせてパスを調整してください
+import { ImagePickerWithRotation } from "./ImagePickerWithRotation"; // 実際の配置場所に合わせてパスを調整してください
 import { buildAuthHeaders } from "../utils/authHeaders"; // 実際の配置場所に合わせてパスを調整してください
 import "../css_components/ShowStoreDetail.css";
 // maplibre-glをインポート(V6対応版)
@@ -27,6 +29,12 @@ interface StoreComment {
   posted_at: string;
 }
 
+// 追加ギャラリー写真1件分(ShowStoreDetail.py / AddStoreImage.pyの1件と一致)
+interface StoreImage {
+  image_url: string;
+  posted_at: string;
+}
+
 // ShowStoreDetail Lambdaが返す、1店舗分の詳細情報
 interface StoreDetail {
   place_id: string;
@@ -37,6 +45,8 @@ interface StoreDetail {
   store_category_name: string;
   comments: StoreComment[];
   image_url: string;
+  // ★追加：表紙写真(image_url)とは別の、追加ギャラリー写真一覧
+  images: StoreImage[];
   longitude: number;
   latitude: number;
   // ★追加：昼/晩の絞り込み用(居酒屋対応)
@@ -148,6 +158,19 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
   >("idle");
   const [addCommentError, setAddCommentError] = useState<string | null>(null);
 
+  // ---- 画像カルーセルまわりの状態 ----
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  // スマホでのスワイプ検知用に、指を触れた位置のX座標を覚えておく
+  const touchStartXRef = useRef<number | null>(null);
+
+  // ---- 画像追加まわりの状態 ----
+  const [newImageFile, setNewImageFile] = useState<File | null>(null);
+  const [newImageRotation, setNewImageRotation] = useState(0);
+  const [addImageStatus, setAddImageStatus] = useState<
+    "idle" | "loading" | "error"
+  >("idle");
+  const [addImageError, setAddImageError] = useState<string | null>(null);
+
   // 現在地座標の取得
   useEffect(() => {
     navigator.geolocation.getCurrentPosition((pos) => {
@@ -201,6 +224,11 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
       cancelled = true;
     };
   }, [placeId, storeRefreshKey]);
+
+  // ★追加：店舗が切り替わったら、カルーセルの表示位置を先頭に戻す
+  useEffect(() => {
+    setCurrentImageIndex(0);
+  }, [placeId]);
 
   // 地図は現在地を中心に表示しつつ、マーカーは店舗の座標に立てる。
   useEffect(() => {
@@ -305,6 +333,47 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     }
   }, [menuPendingDelete]);
 
+  // ★追加：ギャラリー写真を1枚追加する
+  const handleAddImage = async (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!store || !newImageFile) return;
+
+    setAddImageStatus("loading");
+    setAddImageError(null);
+
+    try {
+      const image_url = await uploadImage(
+        newImageFile,
+        "stores",
+        newImageRotation,
+        auth.user?.id_token,
+      );
+
+      const apiUrl =
+        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores/addimage";
+
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        headers: buildAuthHeaders(auth.user?.id_token),
+        body: JSON.stringify({ place_id: store.place_id, image_url }),
+      });
+
+      if (!res.ok) {
+        throw new Error(await readErrorMessage(res));
+      }
+
+      setNewImageFile(null);
+      setNewImageRotation(0);
+      setAddImageStatus("idle");
+      setStoreRefreshKey((key) => key + 1);
+    } catch (err) {
+      setAddImageError(
+        err instanceof Error ? err.message : "画像の追加に失敗しました",
+      );
+      setAddImageStatus("error");
+    }
+  };
+
   // コメントを1件追加する
   const handleAddComment = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -401,6 +470,44 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     }
   };
 
+  // ★追加：表紙写真(image_url)＋追加ギャラリー写真(images)を、1つの配列にまとめる
+  const galleryImages: string[] = store
+    ? [
+        ...(store.image_url ? [store.image_url] : []),
+        ...store.images.map((img) => img.image_url),
+      ]
+    : [];
+  // storeの更新などでgalleryImagesの件数が減った場合に備え、範囲内に収める
+  const safeImageIndex = Math.min(
+    currentImageIndex,
+    Math.max(0, galleryImages.length - 1),
+  );
+
+  const goToPrevImage = () => {
+    setCurrentImageIndex(
+      (i) => (i - 1 + galleryImages.length) % galleryImages.length,
+    );
+  };
+  const goToNextImage = () => {
+    setCurrentImageIndex((i) => (i + 1) % galleryImages.length);
+  };
+
+  // スマホでのスワイプ操作に対応する(左右にある程度の距離を動かしたら切り替える)
+  const SWIPE_THRESHOLD_PX = 40;
+  const handleImageTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    touchStartXRef.current = e.touches[0].clientX;
+  };
+  const handleImageTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (touchStartXRef.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartXRef.current;
+    if (deltaX > SWIPE_THRESHOLD_PX) {
+      goToPrevImage();
+    } else if (deltaX < -SWIPE_THRESHOLD_PX) {
+      goToNextImage();
+    }
+    touchStartXRef.current = null;
+  };
+
   return (
     <div>
       {/* ★変更：h1・「← 戻る」ボタンを削除(共通ヘッダー側に移した)。
@@ -408,7 +515,6 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
       {storeStatus === "success" && store && (
         <nav>
           <button
-            disabled={!auth.isAuthenticated}
             onClick={() =>
               onNavigate("regist-menu", store.place_id, store.title)
             }
@@ -451,11 +557,77 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
 
         {storeStatus === "success" && store && (
           <>
-            {store.image_url ? (
-              <img src={store.image_url} alt={`${store.title}の店舗写真`} />
+            {/* ★変更：単一画像の表示を、複数画像対応のカルーセルに置き換え */}
+            {galleryImages.length > 0 ? (
+              <div
+                className="store-image-carousel"
+                onTouchStart={handleImageTouchStart}
+                onTouchEnd={handleImageTouchEnd}
+              >
+                <img
+                  src={galleryImages[safeImageIndex]}
+                  alt={`${store.title}の店舗写真 ${safeImageIndex + 1}枚目`}
+                />
+
+                {galleryImages.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      className="store-image-carousel__arrow store-image-carousel__arrow--left"
+                      onClick={goToPrevImage}
+                      aria-label="前の写真"
+                    >
+                      ‹
+                    </button>
+                    <button
+                      type="button"
+                      className="store-image-carousel__arrow store-image-carousel__arrow--right"
+                      onClick={goToNextImage}
+                      aria-label="次の写真"
+                    >
+                      ›
+                    </button>
+                    <div className="store-image-carousel__indicator">
+                      {safeImageIndex + 1} / {galleryImages.length}
+                    </div>
+                  </>
+                )}
+              </div>
             ) : (
               <p>店舗写真はまだ登録されていません。</p>
             )}
+
+            {/* ★追加：写真の追加フォーム */}
+            <form onSubmit={handleAddImage} className="store-image-add-form">
+              <ImagePickerWithRotation
+                label="写真を追加する"
+                file={newImageFile}
+                rotation={newImageRotation}
+                onFileChange={setNewImageFile}
+                onRotationChange={setNewImageRotation}
+              />
+
+              {!auth.isAuthenticated && (
+                <p role="alert">
+                  写真を追加するには、右上の「ログイン」から先にログインしてください。
+                </p>
+              )}
+
+              {addImageStatus === "error" && (
+                <p role="alert">{addImageError}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={
+                  addImageStatus === "loading" ||
+                  !newImageFile ||
+                  !auth.isAuthenticated
+                }
+              >
+                {addImageStatus === "loading" ? "追加中..." : "写真を追加する"}
+              </button>
+            </form>
 
             <dl>
               <dt>店舗名</dt>
