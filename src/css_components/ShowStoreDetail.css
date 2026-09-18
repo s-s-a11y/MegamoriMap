@@ -8,6 +8,7 @@
 .store-image-carousel {
   position: relative;
   width: 100%;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   border-radius: 4px;
   background: var(--paper-soft);
@@ -35,9 +36,6 @@
   color: var(--paper-soft);
   font-size: 24px;
   line-height: 1;
-  display: flex;
-  justify-content: center; /* 横方向 */
-  align-items: center;
   cursor: pointer;
 }
 
@@ -123,4 +121,54 @@
   background: rgba(36, 21, 17, 0.75);
   color: var(--paper-soft);
   font-weight: 700;
+}
+
+/* ★追加：メニュー写真をクリック可能にするためのボタン化(見た目は画像のまま) */
+.menu-list__image-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.menu-list__image-button img {
+  width: 100%;
+  display: block;
+}
+
+/* ★追加：メニュー写真の拡大表示(ライトボックス) */
+.image-lightbox {
+  padding: 0;
+  border: none;
+  background: transparent;
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+.image-lightbox::backdrop {
+  background: rgba(36, 21, 17, 0.75);
+}
+
+.image-lightbox img {
+  display: block;
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+}
+
+.image-lightbox__close {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(36, 21, 17, 0.7);
+  color: var(--paper-soft);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
 }

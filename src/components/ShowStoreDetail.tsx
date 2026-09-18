@@ -162,6 +162,10 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
   const deleteConfirmDialogRef = useRef<HTMLDialogElement | null>(null);
   const menuDeleteConfirmDialogRef = useRef<HTMLDialogElement | null>(null);
 
+  // ★追加：メニュー写真の拡大表示(ライトボックス)まわりの状態
+  const [enlargedImageUrl, setEnlargedImageUrl] = useState<string | null>(null);
+  const imageLightboxDialogRef = useRef<HTMLDialogElement | null>(null);
+
   // ---- コメント追加まわりの状態 ----
   const [newComment, setNewComment] = useState("");
   const [addCommentStatus, setAddCommentStatus] = useState<
@@ -350,6 +354,17 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
       dialog.close();
     }
   }, [menuPendingDelete]);
+
+  // ★追加：メニュー写真拡大表示ダイアログの開閉制御
+  useEffect(() => {
+    const dialog = imageLightboxDialogRef.current;
+    if (!dialog) return;
+    if (enlargedImageUrl && !dialog.open) {
+      dialog.showModal();
+    } else if (!enlargedImageUrl && dialog.open) {
+      dialog.close();
+    }
+  }, [enlargedImageUrl]);
 
   // ★追加：ギャラリー写真を1枚追加する
   const handleAddImage = async (e: React.SubmitEvent<HTMLFormElement>) => {
@@ -868,7 +883,14 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                 {menus.map((menu) => (
                   <li key={menu.menu_id} className="menu-list__item">
                     {menu.image_url && (
-                      <img src={menu.image_url} alt={menu.menu_name} />
+                      <button
+                        type="button"
+                        className="menu-list__image-button"
+                        onClick={() => setEnlargedImageUrl(menu.image_url)}
+                        aria-label={`${menu.menu_name}の写真を拡大表示`}
+                      >
+                        <img src={menu.image_url} alt={menu.menu_name} />
+                      </button>
                     )}
                     <strong>{menu.menu_name}</strong>
                     <span>¥{menu.price.toLocaleString()}</span>
@@ -964,6 +986,31 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
             {menuDeleteStatus === "loading" ? "削除中..." : "削除する"}
           </button>
         </div>
+      </dialog>
+
+      {/* ★追加：メニュー写真の拡大表示用ダイアログ */}
+      <dialog
+        ref={imageLightboxDialogRef}
+        className="image-lightbox"
+        onClose={() => setEnlargedImageUrl(null)}
+        onClick={(e) => {
+          // 画像自体ではなく、背景部分をクリックした時だけ閉じる
+          if (e.target === e.currentTarget) {
+            setEnlargedImageUrl(null);
+          }
+        }}
+      >
+        {enlargedImageUrl && (
+          <img src={enlargedImageUrl} alt="拡大表示中の写真" />
+        )}
+        <button
+          type="button"
+          className="image-lightbox__close"
+          onClick={() => setEnlargedImageUrl(null)}
+          aria-label="拡大表示を閉じる"
+        >
+          ×
+        </button>
       </dialog>
     </div>
   );
