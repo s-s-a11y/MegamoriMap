@@ -94,6 +94,8 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
   const [registStatus, setRegistStatus] = useState<Status>("idle");
   const [registError, setRegistError] = useState<string | null>(null);
   const [category, setCategory] = useState<string>("");
+  // ★追加：昼/晩(居酒屋対応)
+  const [mealTime, setMealTime] = useState<"lunch" | "dinner" | "">("");
 
   // ---- コメント・画像まわりの状態 ----
   const [comment, setComment] = useState("");
@@ -186,6 +188,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
           },
           store_category_name: category,
           comment,
+          meal_time: mealTime,
           image_url,
         }),
       });
@@ -340,6 +343,32 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
               」を登録します。よろしいですか？
             </p>
 
+            {/* ★追加：昼/晩(居酒屋対応)。必須項目 */}
+            <fieldset>
+              <legend>昼の店？晩の店？</legend>
+              <label>
+                <input
+                  type="radio"
+                  name="meal-time"
+                  value="lunch"
+                  checked={mealTime === "lunch"}
+                  onChange={() => setMealTime("lunch")}
+                  required
+                />{" "}
+                昼
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="meal-time"
+                  value="dinner"
+                  checked={mealTime === "dinner"}
+                  onChange={() => setMealTime("dinner")}
+                />{" "}
+                晩
+              </label>
+            </fieldset>
+
             <label>
               コメント（任意）
               <textarea
@@ -367,7 +396,9 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
 
             <button
               type="submit"
-              disabled={registStatus === "loading" || !auth.isAuthenticated}
+              disabled={
+                registStatus === "loading" || !auth.isAuthenticated || !mealTime
+              }
             >
               {registStatus === "loading" ? "登録中..." : "この店舗を登録する"}
             </button>

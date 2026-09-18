@@ -39,7 +39,15 @@ interface StoreDetail {
   image_url: string;
   longitude: number;
   latitude: number;
+  // ★追加：昼/晩の絞り込み用(居酒屋対応)
+  meal_time: "lunch" | "dinner";
 }
+
+// meal_timeの値を、画面表示用の日本語に変換する
+const MEAL_TIME_LABELS: Record<string, string> = {
+  lunch: "昼",
+  dinner: "晩",
+};
 
 // ShowStoreMenus Lambdaが返す、メニュー1件分の情報
 interface Menu {
@@ -454,6 +462,10 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
 
               <dt>カテゴリー</dt>
               <dd>{store.store_category_name || "未設定"}</dd>
+
+              {/* ★追加：昼/晩の表示(居酒屋対応) */}
+              <dt>昼/晩</dt>
+              <dd>{MEAL_TIME_LABELS[store.meal_time] ?? store.meal_time}</dd>
 
               <dt>住所</dt>
               <dd>{store.address_label}</dd>

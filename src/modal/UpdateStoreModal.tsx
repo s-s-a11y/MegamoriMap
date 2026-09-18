@@ -9,6 +9,8 @@ interface StoreForUpdate {
   title: string;
   store_category_name: string;
   store_url: string;
+  // ★追加：昼/晩(居酒屋対応)
+  meal_time: "lunch" | "dinner";
 }
 
 interface UpdateStoreModalProps {
@@ -46,6 +48,8 @@ export function UpdateStoreModal({
   const [categories, setCategories] = useState<string[]>([]);
   const [category, setCategory] = useState(store.store_category_name);
   const [storeUrl, setStoreUrl] = useState(store.store_url);
+  // ★追加：昼/晩(居酒屋対応)
+  const [mealTime, setMealTime] = useState<"lunch" | "dinner">(store.meal_time);
   const [imageFile, setImageFile] = useState<File | null>(null);
   // ★追加：画像の回転角度(0/90/180/270)
   const [imageRotation, setImageRotation] = useState(0);
@@ -56,6 +60,7 @@ export function UpdateStoreModal({
     if (!isOpen) return;
     setCategory(store.store_category_name);
     setStoreUrl(store.store_url);
+    setMealTime(store.meal_time);
     setImageFile(null);
     setImageRotation(0);
     setStatus("idle");
@@ -109,6 +114,7 @@ export function UpdateStoreModal({
           place_id: store.place_id,
           store_category_name: category,
           store_url: storeUrl,
+          meal_time: mealTime,
           image_url,
         }),
       });
@@ -155,6 +161,31 @@ export function UpdateStoreModal({
             onChange={(e) => setStoreUrl(e.target.value)}
           />
         </label>
+
+        {/* ★追加：昼/晩(居酒屋対応) */}
+        <fieldset>
+          <legend>昼の店？晩の店？</legend>
+          <label>
+            <input
+              type="radio"
+              name="update-meal-time"
+              value="lunch"
+              checked={mealTime === "lunch"}
+              onChange={() => setMealTime("lunch")}
+            />{" "}
+            昼
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="update-meal-time"
+              value="dinner"
+              checked={mealTime === "dinner"}
+              onChange={() => setMealTime("dinner")}
+            />{" "}
+            晩
+          </label>
+        </fieldset>
 
         {/* ★変更：プレビュー＋回転ボタン付きの共有コンポーネントに置き換え */}
         <ImagePickerWithRotation

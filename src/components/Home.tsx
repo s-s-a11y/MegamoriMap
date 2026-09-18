@@ -13,10 +13,19 @@ type Store = {
   latitude: number;
   store_category_name: string;
   image_url: string;
+  // ★追加：昼/晩の絞り込み用(居酒屋対応)
+  meal_time: "lunch" | "dinner";
 };
 
 const ALL_CATEGORIES = "";
+const ALL_MEAL_TIMES = "";
 const PAGE_SIZE = 8; // 縦2 × 横4 = 1ページ8件
+
+// meal_timeの値を、画面表示用の日本語に変換する
+const MEAL_TIME_LABELS: Record<string, string> = {
+  lunch: "昼",
+  dinner: "晩",
+};
 
 // ShowMegaMap は longitude/latitude が必須入力だが、実装上は絞り込みに
 // 使われていないため、固定値を送っておく。
@@ -35,6 +44,8 @@ export function HomePage({ onNavigate }: HomePageProps) {
   //   店舗情報格納用State
   const [stores, setStores] = useState<Store[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>(ALL_CATEGORIES);
+  // ★追加：昼/晩の絞り込み用State。カテゴリーとは別軸の絞り込み
+  const [mealTimeFilter, setMealTimeFilter] = useState<string>(ALL_MEAL_TIMES);
   const [currentPage, setCurrentPage] = useState(1);
 
   //   画面表示時に一度だけ店舗情報を取得する
@@ -61,18 +72,23 @@ export function HomePage({ onNavigate }: HomePageProps) {
     return Array.from(new Set(names));
   }, [stores]);
 
-  // categoryFilterに応じて表示対象の店舗を絞り込む
+  // categoryFilter・mealTimeFilterに応じて表示対象の店舗を絞り込む
+  // (2つは別軸の絞り込みなので、両方同時に適用するAND条件にする)
   const filteredStores = useMemo(() => {
-    if (categoryFilter === ALL_CATEGORIES) return stores;
-    return stores.filter(
-      (store) => store.store_category_name === categoryFilter,
-    );
-  }, [stores, categoryFilter]);
+    return stores.filter((store) => {
+      const matchesCategory =
+        categoryFilter === ALL_CATEGORIES ||
+        store.store_category_name === categoryFilter;
+      const matchesMealTime =
+        mealTimeFilter === ALL_MEAL_TIMES || store.meal_time === mealTimeFilter;
+      return matchesCategory && matchesMealTime;
+    });
+  }, [stores, categoryFilter, mealTimeFilter]);
 
   // 絞り込み条件が変わったら1ページ目に戻す
   useEffect(() => {
     setCurrentPage(1);
-  }, [categoryFilter]);
+  }, [categoryFilter, mealTimeFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredStores.length / PAGE_SIZE));
 
@@ -85,6 +101,13 @@ export function HomePage({ onNavigate }: HomePageProps) {
     e: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     setCategoryFilter(e.target.value);
+  };
+
+  // ★追加
+  const handleMealTimeFilterChange = (
+    e: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    setMealTimeFilter(e.target.value);
   };
 
   const goToPrevPage = () => {
@@ -120,6 +143,16 @@ export function HomePage({ onNavigate }: HomePageProps) {
           </select>
         </label>
 
+        {/* ★追加：昼/晩の絞り込み(カテゴリーとは別軸) */}
+        <label>
+          昼/晩で絞り込み
+          <select value={mealTimeFilter} onChange={handleMealTimeFilterChange}>
+            <option value={ALL_MEAL_TIMES}>すべて</option>
+            <option value="lunch">昼</option>
+            <option value="dinner">晩</option>
+          </select>
+        </label>
+
         <ul className="store-grid">
           {pagedStores.map((store) => (
             <li key={store.place_id} className="store-card">
@@ -137,6 +170,8 @@ export function HomePage({ onNavigate }: HomePageProps) {
                 <span className="store-card__name">{store.title}</span>
                 <span className="store-card__category">
                   {store.store_category_name}
+                  {/* ★追加：カテゴリーの隣に昼/晩も分かるように表示 */}・
+                  {MEAL_TIME_LABELS[store.meal_time] ?? store.meal_time}
                 </span>
                 <span className="store-card__price">
                   {formatBudgetBand(store.avg_price)}
