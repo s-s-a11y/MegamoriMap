@@ -165,6 +165,27 @@ header.app-header {
   z-index: 1;
 }
 
+/* ★追加：ログイン失敗時のエラーバナー。固定ヘッダーのすぐ下に固定表示する */
+.app-auth-error-banner {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  background: #f8d7da;
+  color: #58151c;
+  border-bottom: 1px solid #f1aeb5;
+}
+
+.app-auth-error-banner p {
+  margin: 0;
+}
+
 /* 固定ヘッダーの高さ分、本体コンテンツを下にずらす */
 .content-area {
   padding-top: 60px;
