@@ -5,12 +5,16 @@ interface HeaderProps {
   onGoHome?: () => void;
 }
 
-// Cognitoのホストされたログイン画面から、ログアウト後に戻ってくる先。
-// main.tsxのredirect_uriと必ず同じ値にしておくこと。
+// Cognitoは標準的なOIDCの「ログアウトエンドポイント」を持たないため、
+// ログアウトは①ブラウザ側が持っているトークンを破棄、②Cognito自身の
+// ホストされたセッションもログアウトさせる、という2段階を自分で行う。
+//
+// ※logout_uriも、Cognito側に登録されたLogout URLと1文字も違わず一致させる
+//   必要がある(末尾のスラッシュの有無も含む。main.tsxのredirect_uriと同じ注意点)
 const COGNITO_DOMAIN =
   "https://ap-northeast-1clp5cwkis.auth.ap-northeast-1.amazoncognito.com";
 const COGNITO_CLIENT_ID = "3ff8jc8a229g96fbpv7lpe0qhm";
-const LOGOUT_REDIRECT_URI = "https://main.dc2x1tgfccujd.amplifyapp.com/";
+const LOGOUT_REDIRECT_URI = "https://main.dc2x1tgfccujd.amplifyapp.com";
 
 // アプリ全体で共通の、画面上部に固定表示されるヘッダー。
 // タイトルは常に固定文言(「メガ盛りマップ」)で、ページごとに変わらない。
