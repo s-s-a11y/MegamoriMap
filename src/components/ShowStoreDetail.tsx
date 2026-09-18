@@ -51,6 +51,8 @@ interface StoreDetail {
   latitude: number;
   // ★追加：昼/晩の絞り込み用(居酒屋対応)
   meal_time: "lunch" | "dinner";
+  // ★追加：Amazon Location Serviceから自動取得した営業時間(無ければ空配列)
+  business_hours: string[];
 }
 
 // meal_timeの値を、画面表示用の日本語に変換する
@@ -639,6 +641,20 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
               {/* ★追加：昼/晩の表示(居酒屋対応) */}
               <dt>昼/晩</dt>
               <dd>{MEAL_TIME_LABELS[store.meal_time] ?? store.meal_time}</dd>
+
+              {/* ★追加：営業時間の表示(自動取得できていれば)。取得できていなければ非表示 */}
+              {(store.business_hours ?? []).length > 0 && (
+                <>
+                  <dt>営業時間</dt>
+                  <dd>
+                    <ul>
+                      {(store.business_hours ?? []).map((line, index) => (
+                        <li key={index}>{line}</li>
+                      ))}
+                    </ul>
+                  </dd>
+                </>
+              )}
 
               <dt>住所</dt>
               <dd>{store.address_label}</dd>
