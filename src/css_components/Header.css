@@ -1,7 +1,67 @@
 /*
-  Header.tsx 専用のスタイル(機能追加#1で追加した部分)。
-  ※ヘッダー本体(.app-header など)のスタイルは、以前からApp.cssにある。
+  Header.tsx 専用のスタイル。
+  ヘッダー本体・ログイン失敗時の案内は、以前App.cssにあったものを
+  CSSの規定(App.cssは共通タグのみ)に合わせてここへ移した(2026-09-29、内容は変更なし)。
 */
+
+/* ---- 共通ヘッダー(常に画面上部に固定表示される) ---- */
+header.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  background: var(--charcoal);
+  padding: 0 16px;
+  z-index: 1000;
+}
+
+.app-header__title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+  font-size: 20px;
+  color: var(--paper);
+}
+
+.app-header__home-button {
+  position: relative;
+  z-index: 1;
+}
+
+.app-header__auth {
+  margin-left: auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* ★追加：ログイン失敗時のエラーバナー。固定ヘッダーのすぐ下に固定表示する */
+.app-auth-error-banner {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  background: #f8d7da;
+  color: #58151c;
+  border-bottom: 1px solid #f1aeb5;
+}
+
+.app-auth-error-banner p {
+  margin: 0;
+}
+
+/* ---- ★追加(機能追加#1) ---- */
 
 /* ヘッダー内のユーザー名と「変更」ボタン */
 .app-header__user {

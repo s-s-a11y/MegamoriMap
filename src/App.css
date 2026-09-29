@@ -129,68 +129,6 @@ section {
   border-top: 1px solid var(--line);
 }
 
-/* ---- 共通ヘッダー(常に画面上部に固定表示される) ---- */
-header.app-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  background: var(--charcoal);
-  padding: 0 16px;
-  z-index: 1000;
-}
-
-.app-header__title {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  margin: 0;
-  border-bottom: none;
-  padding-bottom: 0;
-  font-size: 20px;
-  color: var(--paper);
-}
-
-.app-header__home-button {
-  position: relative;
-  z-index: 1;
-}
-
-.app-header__auth {
-  margin-left: auto;
-  position: relative;
-  z-index: 1;
-}
-
-/* ★追加：ログイン失敗時のエラーバナー。固定ヘッダーのすぐ下に固定表示する */
-.app-auth-error-banner {
-  position: fixed;
-  top: 60px;
-  left: 0;
-  right: 0;
-  z-index: 999;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px 16px;
-  background: #f8d7da;
-  color: #58151c;
-  border-bottom: 1px solid #f1aeb5;
-}
-
-.app-auth-error-banner p {
-  margin: 0;
-}
-
-/* 固定ヘッダーの高さ分、本体コンテンツを下にずらす */
-.content-area {
-  padding-top: 60px;
-}
-
 /* ---- ナビゲーション（画面遷移ボタンの並び） ---- */
 nav {
   display: flex;

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState } from "react";
 import "./App.css";
+import "./css_components/App.css";
 import { Header } from "./components/Header";
 import { HomePage } from "./components/Home";
 import { RegisterStorePage } from "./components/RegistStore";
