@@ -981,8 +981,11 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                         <img src={menu.image_url} alt={menu.menu_name} />
                       </button>
                     )}
-                    <strong>{menu.menu_name}</strong>
-                    <span>¥{menu.price.toLocaleString()}</span>
+                    {/* ★修正(C28)：メニュー名と価格が続けて表示されていたため、別の行にする */}
+                    <strong className="menu-list__name">{menu.menu_name}</strong>
+                    <span className="menu-list__price">
+                      ¥{menu.price.toLocaleString()}
+                    </span>
                     {menu.memo && <p>{menu.memo}</p>}
 
                     {/* ★追加(機能追加#1)：メニューへのコメント(投稿者・投稿日付き) */}
@@ -992,9 +995,10 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                           {menu.comments.map((c, index) => (
                             <li key={index}>
                               <p>{c.comment}</p>
-                              <small>
-                                {displayUserName(c.posted_by_name)}・
-                                {formatPostedDate(c.posted_at)}
+                              {/* ★修正(C28)：狭いカードでも「名前・」と「日付」の途中で改行されないよう、まとまりごとに分ける */}
+                              <small className="menu-comments__meta">
+                                <span>{displayUserName(c.posted_by_name)}・</span>
+                                <span>{formatPostedDate(c.posted_at)}</span>
                               </small>
                             </li>
                           ))}
@@ -1019,7 +1023,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                             }
                             rows={2}
                             maxLength={MENU_COMMENT_MAX_LENGTH}
-                            placeholder="このメニューへのコメント"
+                            placeholder="コメントを書く"
                             aria-label={`${menu.menu_name}へのコメント`}
                           />
                           {menuCommentErrors[menu.menu_id] && (

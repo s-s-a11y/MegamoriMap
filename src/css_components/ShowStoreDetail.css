@@ -199,3 +199,21 @@
   width: 100%;
   box-sizing: border-box;
 }
+
+/* ★修正(C28)：メニュー名と価格を別の行に表示する */
+.menu-list__name,
+.menu-list__price {
+  display: block;
+}
+
+/* ★修正(C28)：投稿者名と投稿日を、それぞれ途中で改行しないまとまりにする
+   (幅が足りないときは、名前と日付の間で折り返す) */
+.menu-comments__meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.menu-comments__meta span {
+  white-space: nowrap;
+}
