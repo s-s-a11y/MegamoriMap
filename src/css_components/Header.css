@@ -69,6 +69,9 @@ header.app-header {
   align-items: center;
   gap: 8px;
   margin-right: 8px;
+  /* ヘッダーの背景(--charcoal)が暗いため、タイトルと同じ明るい色にする
+     (指定しないと本文と同じ濃い色(--ink)になり、読めなかった) */
+  color: var(--paper);
 }
 
 /* ヘッダーの下に出すユーザー名の変更フォーム(ヘッダーと同じく画面上部に固定) */
