@@ -253,17 +253,24 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
   }, [placeId]);
 
   // 地図は現在地を中心に表示しつつ、マーカーは店舗の座標に立てる。
+  // ★修正：現在地が取得できない(位置情報の許可が無い等)場合でも地図を表示できるよう、
+  // 現在地が無ければ店舗の座標を中心にする。現在地が後から取得できた場合は、
+  // positionの変化でこのeffectが再実行され、現在地中心の地図に作り直される。
   useEffect(() => {
     if (!mapContainer.current) return;
-    if (position.latitude === null || position.longitude === null) return;
     if (!store) return;
+
+    const center: [number, number] =
+      position.latitude !== null && position.longitude !== null
+        ? [position.longitude, position.latitude]
+        : [store.longitude, store.latitude];
 
     const styleUrl = `https://maps.geo.${region}.amazonaws.com/maps/v0/maps/${mapName}/style-descriptor?key=${apiKey}`;
 
     const map = new maplibregl.Map({
       container: mapContainer.current,
       style: styleUrl,
-      center: [position.longitude, position.latitude],
+      center,
       zoom: 16,
     });
     mapRef.current = map;
