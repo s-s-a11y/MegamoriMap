@@ -3,6 +3,7 @@ import { useAuth } from "react-oidc-context";
 import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に合わせてパスを調整してください
 import { ImagePickerWithRotation } from "./ImagePickerWithRotation"; // 実際の配置場所に合わせてパスを調整してください
 import { buildAuthHeaders } from "../utils/authHeaders"; // 実際の配置場所に合わせてパスを調整してください
+import { API_BASE_URL, readErrorMessage } from "../utils/api";
 
 // 店舗検索API（SearchStore）が返す検索結果1件分
 interface SearchResult {
@@ -34,22 +35,6 @@ interface RegisterStorePageProps {
 // 池袋駅付近。現在地が取得できるまでの初期値、および取得に失敗した場合の保険として使う。
 const FALLBACK_SEARCH_ORIGIN = { longitude: 139.7109, latitude: 35.7295 };
 
-// ------------------------------------------------------------
-// エラーメッセージの読み取り
-// ------------------------------------------------------------
-async function readErrorMessage(res: Response): Promise<string> {
-  const rawText = await res.text();
-  try {
-    const parsed = JSON.parse(rawText);
-    if (typeof parsed === "object" && parsed?.message) {
-      return parsed.message;
-    }
-    return rawText;
-  } catch {
-    return rawText || `エラーが発生しました（ステータスコード: ${res.status}）`;
-  }
-}
-
 // 店舗登録用ページ
 export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
   // ★追加：書き込み系のAPI呼び出しに使うIDトークンを取得する
@@ -77,7 +62,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
       },
     );
     fetch(
-      "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/categories/stores",
+      `${API_BASE_URL}/categories/stores`,
     )
       .then((res) => res.json())
       .then((data) => setCategories(data.categories ?? []));
@@ -126,7 +111,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
 
     try {
       const apiUrl =
-        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores/search";
+        `${API_BASE_URL}/stores/search`;
 
       const origin =
         position.longitude !== null && position.latitude !== null
@@ -166,7 +151,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
 
     try {
       const apiUrl =
-        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores";
+        `${API_BASE_URL}/stores`;
 
       // 画像が選ばれていれば、共有ユーティリティでリサイズ・回転→S3へ直接アップロードする
       const image_url = imageFile
@@ -252,7 +237,7 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
 
     try {
       const apiUrl =
-        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/categories/stores";
+        `${API_BASE_URL}/categories/stores`;
 
       const res = await fetch(apiUrl, {
         method: "POST",

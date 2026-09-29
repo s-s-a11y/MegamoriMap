@@ -13,6 +13,7 @@ import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 // worker本体をViteに正しくバンドルさせて、そのURLを取得する
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
+import { API_BASE_URL, readErrorMessage } from "../utils/api";
 
 // アプリ起動時に一度だけ、workerの場所をMapLibreに教える
 maplibregl.setWorkerUrl(workerUrl);
@@ -29,7 +30,7 @@ interface StoreComment {
   posted_at: string;
 }
 
-// 追加ギャラリー写真1件分(ShowStoreDetail.py / AddStoreImage.pyの1件と一致)
+// 追加ギャラリー写真1件分(ShowStoreDetail.py / AddStoreImages.pyの1件と一致)
 interface StoreImage {
   image_url: string;
   posted_at: string;
@@ -92,22 +93,6 @@ interface StoreDetailPageProps {
     placeId?: string,
     storeName?: string,
   ) => void;
-}
-
-// ------------------------------------------------------------
-// エラーメッセージの読み取り
-// ------------------------------------------------------------
-async function readErrorMessage(res: Response): Promise<string> {
-  const rawText = await res.text();
-  try {
-    const parsed = JSON.parse(rawText);
-    if (typeof parsed === "object" && parsed?.message) {
-      return parsed.message;
-    }
-    return rawText;
-  } catch {
-    return rawText || `エラーが発生しました（ステータスコード: ${res.status}）`;
-  }
 }
 
 export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
@@ -211,7 +196,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     setStoreErrorMessage(null);
 
     const apiUrl =
-      "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores/detail";
+      `${API_BASE_URL}/stores/detail`;
 
     fetch(apiUrl, {
       method: "POST",
@@ -307,7 +292,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     setMenuErrorMessage(null);
 
     const apiUrl =
-      "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores/menus";
+      `${API_BASE_URL}/stores/menus`;
 
     fetch(apiUrl, {
       method: "POST",
@@ -390,7 +375,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
       );
 
       const apiUrl =
-        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores/addimage";
+        `${API_BASE_URL}/stores/addimage`;
 
       const res = await fetch(apiUrl, {
         method: "POST",
@@ -426,7 +411,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
 
     try {
       const apiUrl =
-        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores/addpricereport";
+        `${API_BASE_URL}/stores/addpricereport`;
 
       const res = await fetch(apiUrl, {
         method: "POST",
@@ -462,7 +447,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
 
     try {
       const apiUrl =
-        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores/addcomment";
+        `${API_BASE_URL}/stores/addcomment`;
 
       const res = await fetch(apiUrl, {
         method: "POST",
@@ -494,7 +479,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
 
     try {
       const apiUrl =
-        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores/delete";
+        `${API_BASE_URL}/stores/delete`;
 
       const res = await fetch(apiUrl, {
         method: "POST",
@@ -524,7 +509,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
 
     try {
       const apiUrl =
-        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/menus/delete";
+        `${API_BASE_URL}/menus/delete`;
 
       const res = await fetch(apiUrl, {
         method: "POST",

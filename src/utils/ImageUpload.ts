@@ -1,6 +1,9 @@
 // 店舗登録・メニュー登録など、画像を伴う登録処理全般で使い回すユーティリティ。
 // このファイルだけは複数のページから読み込まれる前提の共有モジュール。
 
+import { API_BASE_URL } from "./api";
+import { buildAuthHeaders } from "./authHeaders";
+
 const MAX_IMAGE_DIMENSION = 1600; // アップロード前にリサイズする際の長辺の上限(px)
 const IMAGE_JPEG_QUALITY = 0.8;
 
@@ -95,15 +98,12 @@ export async function uploadImage(
 ): Promise<string> {
   const blob = await resizeImageToJpegBlob(file, rotationDegrees);
 
-  const issueUrlApiUrl =
-    "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/images/upload-url";
+  const issueUrlApiUrl = `${API_BASE_URL}/images/upload-url`;
 
   const issueRes = await fetch(issueUrlApiUrl, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(idToken ? { Authorization: idToken } : {}),
-    },
+    // 他の書き込み系APIと同じ共通ユーティリティで認証ヘッダーを組み立てる
+    headers: buildAuthHeaders(idToken),
     body: JSON.stringify({ content_type: "image/jpeg", folder }),
   });
 
@@ -114,7 +114,7 @@ export async function uploadImage(
   const { upload_url, image_url } =
     (await issueRes.json()) as IssueUploadUrlResponse;
 
-  // IssueImageUploadUrl.py が署名に含めたCacheControlと、
+  // ImageUploadUrl.py が署名に含めたCacheControlと、
   // ここで送るヘッダーが一致していないと署名検証エラー(403)になるので注意。
   const uploadRes = await fetch(upload_url, {
     method: "PUT",

@@ -3,6 +3,7 @@ import { useAuth } from "react-oidc-context";
 import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に合わせてパスを調整してください
 import { ImagePickerWithRotation } from "../components/ImagePickerWithRotation"; // 実際の配置場所に合わせてパスを調整してください
 import { buildAuthHeaders } from "../utils/authHeaders"; // 実際の配置場所に合わせてパスを調整してください
+import { API_BASE_URL, readErrorMessage } from "../utils/api";
 
 interface StoreForUpdate {
   place_id: string;
@@ -21,19 +22,6 @@ interface UpdateStoreModalProps {
 }
 
 type Status = "idle" | "loading" | "error";
-
-async function readErrorMessage(res: Response): Promise<string> {
-  const rawText = await res.text();
-  try {
-    const parsed = JSON.parse(rawText);
-    if (typeof parsed === "object" && parsed?.message) {
-      return parsed.message;
-    }
-    return rawText;
-  } catch {
-    return rawText || `エラーが発生しました（ステータスコード: ${res.status}）`;
-  }
-}
 
 export function UpdateStoreModal({
   store,
@@ -81,7 +69,7 @@ export function UpdateStoreModal({
     if (!isOpen) return;
 
     fetch(
-      "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/categories/stores",
+      `${API_BASE_URL}/categories/stores`,
     )
       .then((res) => res.json())
       .then((data) => setCategories(data.categories ?? []));
@@ -95,7 +83,7 @@ export function UpdateStoreModal({
 
     try {
       const apiUrl =
-        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/stores/update";
+        `${API_BASE_URL}/stores/update`;
 
       // 画像を選び直した場合のみアップロードし、image_urlを送る
       const image_url = imageFile

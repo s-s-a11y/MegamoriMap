@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatBudgetBand, getBudgetSourcePrice } from "../utils/FormatPrice"; // 実際の配置場所に合わせてパスを調整してください
 import "../css_components/Home.css";
+import { API_BASE_URL } from "../utils/api";
 
 // 店舗情報格納用typeの定義
 type Store = {
@@ -53,7 +54,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
   //   画面表示時に一度だけ店舗情報を取得する
   useEffect(() => {
     fetch(
-      "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/map",
+      `${API_BASE_URL}/map`,
       {
         method: "POST",
         headers: {

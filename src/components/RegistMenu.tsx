@@ -3,6 +3,7 @@ import { useAuth } from "react-oidc-context";
 import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に合わせてパスを調整してください
 import { ImagePickerWithRotation } from "./ImagePickerWithRotation"; // 実際の配置場所に合わせてパスを調整してください
 import { buildAuthHeaders } from "../utils/authHeaders"; // 実際の配置場所に合わせてパスを調整してください
+import { API_BASE_URL, readErrorMessage } from "../utils/api";
 
 type SubmitStatus = "idle" | "loading" | "error";
 
@@ -19,22 +20,6 @@ interface RegisterMenuPageProps {
 }
 
 const MENU_NAME_MAX_LENGTH = 30; // RegistMenu.py: MAX_MENU_NAME_LENGTH = 30
-
-// ------------------------------------------------------------
-// エラーメッセージの読み取り
-// ------------------------------------------------------------
-async function readErrorMessage(res: Response): Promise<string> {
-  const rawText = await res.text();
-  try {
-    const parsed = JSON.parse(rawText);
-    if (typeof parsed === "object" && parsed?.message) {
-      return parsed.message;
-    }
-    return rawText;
-  } catch {
-    return rawText || `エラーが発生しました（ステータスコード: ${res.status}）`;
-  }
-}
 
 export function RegisterMenuPage({
   placeId,
@@ -75,7 +60,7 @@ export function RegisterMenuPage({
 
     try {
       const apiUrl =
-        "https://uay8s2uqz9.execute-api.ap-northeast-1.amazonaws.com/MegamoriMap/menus";
+        `${API_BASE_URL}/menus`;
 
       // 画像が選ばれていれば、共有ユーティリティでリサイズ・回転→S3へ直接アップロードする
       const image_url = imageFile
