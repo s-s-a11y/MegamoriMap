@@ -997,6 +997,10 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                     <span className="menu-list__price">
                       ¥{menu.price.toLocaleString()}
                     </span>
+                    {/* ★追加(C30)：メニューを登録した人(未設定・古いデータは「名無しさん」) */}
+                    <small className="menu-list__creator">
+                      登録者：{displayUserName(menu.created_by_name)}
+                    </small>
                     {menu.memo && <p>{menu.memo}</p>}
 
                     {/* ★追加(機能追加#1)：メニューへのコメント(投稿者・投稿日付き) */}

@@ -206,6 +206,12 @@
   display: block;
 }
 
+/* ★追加(C30)：メニューの登録者。価格の下に小さく表示する */
+.menu-list__creator {
+  display: block;
+  opacity: 0.75;
+}
+
 /* ★修正(C28)：投稿者名と投稿日を、それぞれ途中で改行しないまとまりにする
    (幅が足りないときは、名前と日付の間で折り返す) */
 .menu-comments__meta {
