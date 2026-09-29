@@ -1,0 +1,30 @@
+/*
+  UserNameForm.tsx 専用のスタイル(機能追加#1)。
+  Home画面の未設定時の案内と、ヘッダーのユーザー名変更の両方で使われる。
+*/
+
+/*
+  入力欄とボタンを横並びにする。
+  App.cssの共通 form は縦並び(flex-direction: column)のため、ここで横並びに戻す。
+  (縦並びのままだと、入力欄のflex指定が「高さ」として効いてしまい、入力欄が正方形になっていた)
+*/
+.user-name-form {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 入力欄は残りの幅いっぱいに広げ、狭い画面ではボタンが下に折り返す */
+.user-name-form input {
+  flex: 1 1 16em;
+  min-width: 0;
+}
+
+/* エラーメッセージは入力欄の下の行に出す */
+.user-name-form p[role="alert"] {
+  flex-basis: 100%;
+  max-width: none;
+  margin: 0;
+  color: var(--brick);
+}

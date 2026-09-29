@@ -172,3 +172,30 @@
   line-height: 1;
   cursor: pointer;
 }
+
+/* ★追加(機能追加#1)：メニューカード内のコメント一覧と投稿欄 */
+.menu-comments {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.menu-comments ul {
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.menu-comments li p {
+  margin: 0;
+}
+
+.menu-comments__empty {
+  margin: 0 0 8px;
+  font-size: 0.9em;
+}
+
+.menu-comments textarea {
+  width: 100%;
+  box-sizing: border-box;
+}

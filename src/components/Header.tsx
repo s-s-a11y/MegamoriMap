@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { UserNameForm } from "./UserNameForm";
+import "../css_components/Header.css";
 
 interface HeaderProps {
   // Home画面自身では渡さない。渡されなければ「TOPに戻る」ボタンは表示しない。

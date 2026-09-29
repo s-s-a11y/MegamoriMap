@@ -1,4 +1,5 @@
 import { useState } from "react";
+import "../css_components/UserNameForm.css";
 
 // 機能追加#1：ユーザー名の登録・変更フォーム。
 // Home画面の未設定時の案内と、ヘッダーの「変更」の両方で使い回す。

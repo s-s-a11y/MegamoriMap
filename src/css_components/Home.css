@@ -87,3 +87,22 @@
   min-width: 4em;
   text-align: center;
 }
+
+/*
+  ★追加(機能追加#1)：ユーザー名が未設定の人への案内。
+  一覧(.home-main)と同じく画面幅いっぱいに表示する。
+*/
+.user-name-banner {
+  /* App.cssの共通 section(上の区切り線・余白)を打ち消し、枠で囲む */
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  background: var(--paper-soft);
+  border: 1px solid var(--turmeric);
+  border-radius: 8px;
+}
+
+.user-name-banner p {
+  /* App.cssの共通 p の max-width(70ch)を外し、途中で改行されないようにする */
+  max-width: none;
+  margin: 0 0 8px;
+}
