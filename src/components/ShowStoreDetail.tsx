@@ -55,6 +55,8 @@ interface StoreDetail {
   image_url: string;
   // ★追加：表紙写真(image_url)とは別の、追加ギャラリー写真一覧
   images: StoreImage[];
+  // ★追加(U9)：登録者のID(Cognitoのsub)。削除ボタンを出すかの判定に使う
+  created_by: string;
   longitude: number;
   latitude: number;
   // ★追加：昼/晩の絞り込み用(居酒屋対応)
@@ -79,7 +81,12 @@ interface Menu {
   price: number;
   memo: string;
   image_url: string;
+  // ★追加(U9)：登録者のID(Cognitoのsub)。削除ボタンを出すかの判定に使う
+  created_by: string;
 }
+
+// ★追加(U9)：管理者はCognitoのこのグループに属する人(DeleteStore.py・DeleteMenu.pyと同じ値)
+const ADMIN_GROUP = "megamorimap-admin";
 
 type StoreStatus = "loading" | "success" | "error" | "not-found";
 type MenuStatus = "loading" | "success" | "error";
@@ -99,6 +106,17 @@ interface StoreDetailPageProps {
 export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
   // ★追加：書き込み系のAPI呼び出しに使うIDトークンを取得する
   const auth = useAuth();
+
+  // ★追加(U9)：削除できるのは登録者本人と管理者だけ。削除できない人には削除ボタンを出さない。
+  // ここは表示の制御のみで、実際の可否はLambda(DeleteStore・DeleteMenu)側で判定する
+  const loginSub = auth.isAuthenticated ? auth.user?.profile.sub : undefined;
+  const loginGroups = auth.user?.profile["cognito:groups"];
+  const isAdmin =
+    auth.isAuthenticated &&
+    Array.isArray(loginGroups) &&
+    loginGroups.includes(ADMIN_GROUP);
+  const canDelete = (createdBy: string | undefined) =>
+    isAdmin || (!!loginSub && createdBy === loginSub);
 
   const mapContainer = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -603,12 +621,12 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
             >
               更新
             </button>
-            <button
-              onClick={() => setIsStoreDeleteConfirmOpen(true)}
-              disabled={!auth.isAuthenticated}
-            >
-              削除
-            </button>
+            {/* ★修正(U9)：登録者本人と管理者にだけ表示する */}
+            {canDelete(store.created_by) && (
+              <button onClick={() => setIsStoreDeleteConfirmOpen(true)}>
+                削除
+              </button>
+            )}
           </div>
         </nav>
       )}
@@ -907,12 +925,12 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                       >
                         更新
                       </button>
-                      <button
-                        onClick={() => setMenuPendingDelete(menu)}
-                        disabled={!auth.isAuthenticated}
-                      >
-                        削除
-                      </button>
+                      {/* ★修正(U9)：登録者本人と管理者にだけ表示する */}
+                      {canDelete(menu.created_by) && (
+                        <button onClick={() => setMenuPendingDelete(menu)}>
+                          削除
+                        </button>
+                      )}
                     </div>
                   </li>
                 ))}
