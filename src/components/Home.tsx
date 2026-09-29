@@ -178,28 +178,31 @@ export function HomePage({
       </nav>
 
       <main className="home-main">
-        {/* カテゴリー絞り込み */}
-        <label>
-          カテゴリーで絞り込み
-          <select value={categoryFilter} onChange={handleCategoryFilterChange}>
-            <option value={ALL_CATEGORIES}>すべて</option>
-            {categoryOptions.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </label>
+        {/* ★修正(C33)：2つの絞り込みを横に並べ、1つあたりの幅を抑える(狭い画面では縦に並ぶ) */}
+        <div className="home-filters">
+          {/* カテゴリー絞り込み */}
+          <label>
+            カテゴリーで絞り込み
+            <select value={categoryFilter} onChange={handleCategoryFilterChange}>
+              <option value={ALL_CATEGORIES}>すべて</option>
+              {categoryOptions.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        {/* ★追加：昼/晩の絞り込み(カテゴリーとは別軸) */}
-        <label>
-          昼/晩で絞り込み
-          <select value={mealTimeFilter} onChange={handleMealTimeFilterChange}>
-            <option value={ALL_MEAL_TIMES}>すべて</option>
-            <option value="lunch">昼</option>
-            <option value="dinner">晩</option>
-          </select>
-        </label>
+          {/* ★追加：昼/晩の絞り込み(カテゴリーとは別軸) */}
+          <label>
+            昼/晩で絞り込み
+            <select value={mealTimeFilter} onChange={handleMealTimeFilterChange}>
+              <option value={ALL_MEAL_TIMES}>すべて</option>
+              <option value="lunch">昼</option>
+              <option value="dinner">晩</option>
+            </select>
+          </label>
+        </div>
 
         {/* ★追加：読み込み中・エラー・0件の表示 */}
         {loadStatus === "loading" && <p>読み込み中...</p>}
@@ -222,33 +225,35 @@ export function HomePage({
         <ul className="store-grid">
           {pagedStores.map((store) => (
             <li key={store.place_id} className="store-card">
-              {store.image_url ? (
-                <img
-                  className="store-card__image"
-                  src={store.image_url}
-                  alt={store.title}
-                />
-              ) : (
-                <div className="store-card__placeholder">写真なし</div>
-              )}
+              {/* ★修正(C34)：「詳細を見る」ボタンをやめ、カード全体を押すと詳細画面へ移動する。
+                  ボタンの中に置けるのは文章レベルの要素だけのため、divではなくspanを使う */}
+              <button
+                type="button"
+                className="store-card__link"
+                onClick={() => onNavigate("store-detail", store.place_id)}
+              >
+                {store.image_url ? (
+                  <img
+                    className="store-card__image"
+                    src={store.image_url}
+                    alt={store.title}
+                  />
+                ) : (
+                  <span className="store-card__placeholder">写真なし</span>
+                )}
 
-              <div className="store-card__body">
-                <span className="store-card__name">{store.title}</span>
-                <span className="store-card__category">
-                  {store.store_category_name}
-                  {/* ★追加：カテゴリーの隣に昼/晩も分かるように表示 */}・
-                  {MEAL_TIME_LABELS[store.meal_time] ?? store.meal_time}
+                <span className="store-card__body">
+                  <span className="store-card__name">{store.title}</span>
+                  <span className="store-card__category">
+                    {store.store_category_name}
+                    {/* ★追加：カテゴリーの隣に昼/晩も分かるように表示 */}・
+                    {MEAL_TIME_LABELS[store.meal_time] ?? store.meal_time}
+                  </span>
+                  <span className="store-card__price">
+                    {formatBudgetBand(getBudgetSourcePrice(store))}
+                  </span>
                 </span>
-                <span className="store-card__price">
-                  {formatBudgetBand(getBudgetSourcePrice(store))}
-                </span>
-                <button
-                  className="store-card__button"
-                  onClick={() => onNavigate("store-detail", store.place_id)}
-                >
-                  詳細を見る
-                </button>
-              </div>
+              </button>
             </li>
           ))}
         </ul>

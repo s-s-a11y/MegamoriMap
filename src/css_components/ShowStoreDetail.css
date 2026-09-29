@@ -223,3 +223,26 @@
 .menu-comments__meta span {
   white-space: nowrap;
 }
+
+/* ---- ★追加(C32)：削除ボタンを、更新などの通常のボタンと見分けられるようにする ---- */
+
+/* 一覧・カード上の「削除」：取り消せない操作なので、塗りつぶさず赤枠にして控えめにする */
+.danger-button-outline {
+  color: var(--brick);
+  background: var(--paper-soft);
+  border: 1px solid var(--brick);
+}
+
+.danger-button-outline:hover:not(:disabled) {
+  color: var(--paper-soft);
+  background: var(--brick);
+}
+
+/* 確認ダイアログの「削除する」：最終確認なので、通常の柿色ではなく濃い赤で塗りつぶす */
+.danger-button {
+  background: var(--brick);
+}
+
+.danger-button:hover:not(:disabled) {
+  background: #6e241a;
+}

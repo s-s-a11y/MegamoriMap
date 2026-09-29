@@ -685,7 +685,10 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
             </button>
             {/* ★修正(U9)：登録者本人と管理者にだけ表示する */}
             {canDelete(store.created_by) && (
-              <button onClick={() => setIsStoreDeleteConfirmOpen(true)}>
+              <button
+                className="danger-button-outline"
+                onClick={() => setIsStoreDeleteConfirmOpen(true)}
+              >
                 削除
               </button>
             )}
@@ -1068,7 +1071,10 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                       </button>
                       {/* ★修正(U9)：登録者本人と管理者にだけ表示する */}
                       {canDelete(menu.created_by) && (
-                        <button onClick={() => setMenuPendingDelete(menu)}>
+                        <button
+                          className="danger-button-outline"
+                          onClick={() => setMenuPendingDelete(menu)}
+                        >
                           削除
                         </button>
                       )}
@@ -1111,6 +1117,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
           </button>
           <button
             type="button"
+            className="danger-button"
             onClick={handleConfirmDeleteStore}
             disabled={storeDeleteStatus === "loading" || !auth.isAuthenticated}
           >
@@ -1147,6 +1154,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
           </button>
           <button
             type="button"
+            className="danger-button"
             onClick={handleConfirmDeleteMenu}
             disabled={menuDeleteStatus === "loading" || !auth.isAuthenticated}
           >

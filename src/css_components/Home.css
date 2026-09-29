@@ -9,6 +9,20 @@
   max-width: none;
 }
 
+/* ★追加(C33)：絞り込み2つを横に並べる。1つあたり最大20文字分の幅に抑え、
+   狭い画面では折り返して縦に並ぶ */
+.home-filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+
+.home-filters label {
+  flex: 1 1 14em;
+  max-width: 20em;
+}
+
 /*
   カードを並べるグリッド。列数は固定せず、auto-fillとminmaxで
   画面幅に応じて自動的に決まるようにしている。
@@ -39,6 +53,7 @@
 }
 
 .store-card__placeholder {
+  box-sizing: border-box;
   width: 100%;
   aspect-ratio: 4 / 3;
   display: flex;
@@ -68,9 +83,38 @@
   color: rgba(42, 23, 16, 0.75);
 }
 
-.store-card__button {
-  margin-top: auto;
-  align-self: flex-start;
+/* ★追加(C34)：カード全体を押せるボタンにする。共通のbuttonの見た目(柿色の塗り・
+   太字・余白)を打ち消し、カードの見た目のままにする */
+.store-card__link {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  padding: 0;
+  font-weight: normal;
+  text-align: inherit;
+  color: inherit;
+  background: transparent;
+  border-radius: 0;
+}
+
+.store-card__link:hover:not(:disabled) {
+  background: transparent;
+}
+
+/* 押せることが分かるよう、マウスを乗せたらカードの枠をからし色にして少し浮かせる */
+.store-card {
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.store-card:hover {
+  border-color: var(--turmeric);
+  transform: translateY(-2px);
+}
+
+/* キーボード操作時の枠線が、カードの角丸の内側に収まるようにする */
+.store-card__link:focus-visible {
+  outline-offset: -2px;
 }
 
 /* ページング */

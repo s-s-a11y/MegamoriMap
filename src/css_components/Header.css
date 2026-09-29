@@ -63,15 +63,45 @@ header.app-header {
 
 /* ---- ★追加(機能追加#1) ---- */
 
-/* ヘッダー内のユーザー名と「変更」ボタン */
-.app-header__user {
-  display: inline-flex;
+/* ---- ★追加(C31)：ユーザー名・ユーザー名変更・ログアウトをまとめた「≡」メニュー ---- */
+
+/* 幅の狭い画面でも「TOPに戻る」・タイトルが途中で改行されないようにする */
+.app-header__home-button,
+.app-header__title {
+  white-space: nowrap;
+}
+
+/* 「≡」ボタン。アイコンだけなので、左右の余白を詰めて正方形に近づける */
+.app-header__menu-button {
+  display: flex;
   align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+}
+
+/* ボタンの右下に開くメニュー */
+.app-header__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-  margin-right: 8px;
-  /* ヘッダーの背景(--charcoal)が暗いため、タイトルと同じ明るい色にする
-     (指定しないと本文と同じ濃い色(--ink)になり、読めなかった) */
-  color: var(--paper);
+  min-width: 12em;
+  padding: 12px;
+  background: var(--paper-soft);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(42, 23, 16, 0.25);
+}
+
+.app-header__menu-user {
+  margin: 0 0 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 700;
+  color: var(--ink);
+  overflow-wrap: anywhere; /* 20文字の長い名前でも枠からはみ出さない */
 }
 
 /* ヘッダーの下に出すユーザー名の変更フォーム(ヘッダーと同じく画面上部に固定) */
@@ -84,4 +114,16 @@ header.app-header {
   padding: 12px 16px;
   background: var(--paper-soft);
   border-bottom: 1px solid var(--line);
+}
+
+/* 幅の狭いスマホ(〜420px)では、「TOPに戻る」とタイトルが重ならないよう少し小さくする */
+@media (max-width: 420px) {
+  .app-header__title {
+    font-size: 17px;
+  }
+
+  .app-header__home-button {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
 }
