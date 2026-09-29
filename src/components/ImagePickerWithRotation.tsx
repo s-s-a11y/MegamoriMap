@@ -22,22 +22,27 @@ export function ImagePickerWithRotation({
   onFileChange,
   onRotationChange,
 }: ImagePickerWithRotationProps) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // ★修正：プレビュー用URLは、ファイルを選んだ時点(イベント)で作る。
+  // どのファイルのURLかも一緒に覚えておき、親側でfileがリセットされた
+  // (登録完了後にnullに戻された等)場合はプレビューを出さない(lint: set-state-in-effect対応)。
+  const [preview, setPreview] = useState<{ file: File; url: string } | null>(
+    null,
+  );
+  const previewUrl = preview && preview.file === file ? preview.url : null;
 
-  // fileが変わるたびにプレビュー用URLを作り直す。
-  // 使わなくなったURLはメモリリーク防止のため必ず解放する。
+  // 使わなくなったURLはメモリリーク防止のため必ず解放する
   useEffect(() => {
-    if (!file) {
-      setPreviewUrl(null);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
+    return () => {
+      if (preview) URL.revokeObjectURL(preview.url);
+    };
+  }, [preview]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onFileChange(e.target.files?.[0] ?? null);
+    const selected = e.target.files?.[0] ?? null;
+    onFileChange(selected);
+    setPreview(
+      selected ? { file: selected, url: URL.createObjectURL(selected) } : null,
+    );
     // 新しく選び直した画像には、前回の回転を引き継がない
     onRotationChange(0);
   };

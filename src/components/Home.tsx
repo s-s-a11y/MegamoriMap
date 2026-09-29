@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatBudgetBand, getBudgetSourcePrice } from "../utils/FormatPrice"; // 実際の配置場所に合わせてパスを調整してください
 import "../css_components/Home.css";
-import { API_BASE_URL } from "../utils/api";
+import { API_BASE_URL, readErrorMessage } from "../utils/api";
 
 // 店舗情報格納用typeの定義
 type Store = {
@@ -19,6 +19,8 @@ type Store = {
   // ★追加：夜(dinner)の店の予算帯表示に使う、申告額の平均
   price_per_person: number;
 };
+
+type LoadStatus = "loading" | "success" | "error";
 
 const ALL_CATEGORIES = "";
 const ALL_MEAL_TIMES = "";
@@ -51,20 +53,45 @@ export function HomePage({ onNavigate }: HomePageProps) {
   const [mealTimeFilter, setMealTimeFilter] = useState<string>(ALL_MEAL_TIMES);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // ★追加：店舗一覧の読み込み状態。失敗時に「0件」と区別できるようにする
+  const [loadStatus, setLoadStatus] = useState<LoadStatus>("loading");
+  const [loadErrorMessage, setLoadErrorMessage] = useState<string | null>(null);
+
   //   画面表示時に一度だけ店舗情報を取得する
+  // ★修正：レスポンスの成否を確認し、失敗時はエラーを表示する
+  // (以前はres.okを確認していなかったため、APIが失敗しても「店舗0件」に見えていた)
   useEffect(() => {
-    fetch(
-      `${API_BASE_URL}/map`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(DEFAULT_ORIGIN),
+    let cancelled = false;
+
+    fetch(`${API_BASE_URL}/map`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    )
-      .then((res) => res.json())
-      .then((data) => setStores(data.stores ?? []));
+      body: JSON.stringify(DEFAULT_ORIGIN),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(await readErrorMessage(res));
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setStores(data.stores ?? []);
+        setLoadStatus("success");
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setLoadErrorMessage(
+          err instanceof Error ? err.message : "店舗情報の取得に失敗しました",
+        );
+        setLoadStatus("error");
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // storesの中に実際に登場するカテゴリー名だけを重複無しで抽出する
@@ -88,10 +115,6 @@ export function HomePage({ onNavigate }: HomePageProps) {
     });
   }, [stores, categoryFilter, mealTimeFilter]);
 
-  // 絞り込み条件が変わったら1ページ目に戻す
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [categoryFilter, mealTimeFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredStores.length / PAGE_SIZE));
 
@@ -104,6 +127,8 @@ export function HomePage({ onNavigate }: HomePageProps) {
     e: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     setCategoryFilter(e.target.value);
+    // ★修正：絞り込み条件が変わったら1ページ目に戻す(以前はeffectで行っていた)
+    setCurrentPage(1);
   };
 
   // ★追加
@@ -111,6 +136,8 @@ export function HomePage({ onNavigate }: HomePageProps) {
     e: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     setMealTimeFilter(e.target.value);
+    // ★修正：絞り込み条件が変わったら1ページ目に戻す(以前はeffectで行っていた)
+    setCurrentPage(1);
   };
 
   const goToPrevPage = () => {
@@ -155,6 +182,24 @@ export function HomePage({ onNavigate }: HomePageProps) {
             <option value="dinner">晩</option>
           </select>
         </label>
+
+        {/* ★追加：読み込み中・エラー・0件の表示 */}
+        {loadStatus === "loading" && <p>読み込み中...</p>}
+
+        {loadStatus === "error" && (
+          <p role="alert">
+            店舗情報の取得に失敗しました。時間をおいて再度お試しください。
+            （{loadErrorMessage}）
+          </p>
+        )}
+
+        {loadStatus === "success" && stores.length === 0 && (
+          <p>まだ店舗が登録されていません。</p>
+        )}
+
+        {loadStatus === "success" &&
+          stores.length > 0 &&
+          filteredStores.length === 0 && <p>条件に合う店舗がありません。</p>}
 
         <ul className="store-grid">
           {pagedStores.map((store) => (

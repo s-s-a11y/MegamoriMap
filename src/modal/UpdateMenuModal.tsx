@@ -42,16 +42,9 @@ export function UpdateMenuModal({
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    setMenuName(menu.menu_name);
-    setPrice(String(menu.price));
-    setMemo(menu.memo);
-    setImageFile(null);
-    setImageRotation(0);
-    setStatus("idle");
-    setErrorMessage(null);
-  }, [isOpen, menu]);
+  // ★修正：開くたびのフォーム初期化はeffectで行わない。呼び出し側
+  // (ShowStoreDetail.tsx)がkey={menu_id}付きで編集中だけ描画するため、開くたびに
+  // 上のuseStateの初期値(menuの現在値)で作り直される(lint: set-state-in-effect対応)。
 
   useEffect(() => {
     const dialog = dialogRef.current;

@@ -14,6 +14,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 // worker本体をViteに正しくバンドルさせて、そのURLを取得する
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { API_BASE_URL, readErrorMessage } from "../utils/api";
+import { isHttpUrl } from "../utils/url";
 
 // アプリ起動時に一度だけ、workerの場所をMapLibreに教える
 maplibregl.setWorkerUrl(workerUrl);
@@ -189,11 +190,12 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
   }, []);
 
   // 店舗情報の取得
+  // ★修正：取得開始時にstoreStatusを"loading"へ戻すのをやめた(lint: set-state-in-effect対応)。
+  // 初回は初期値の"loading"のまま表示され、コメント追加などによる再取得の間は
+  // 取得済みの内容を表示し続ける(再取得のたびに画面が「読み込み中」に切り替わらない)。
+  // 別の店舗に切り替わる場合は、App.tsx側でkey={placeId}によりこの画面ごと作り直す。
   useEffect(() => {
     let cancelled = false;
-
-    setStoreStatus("loading");
-    setStoreErrorMessage(null);
 
     const apiUrl =
       `${API_BASE_URL}/stores/detail`;
@@ -232,23 +234,25 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     };
   }, [placeId, storeRefreshKey]);
 
-  // ★追加：店舗が切り替わったら、カルーセルの表示位置を先頭に戻す
-  useEffect(() => {
-    setCurrentImageIndex(0);
-  }, [placeId]);
+  // ★修正：店舗が切り替わった時のカルーセル位置のリセットは、App.tsx側の
+  // key={placeId}で画面ごと作り直すことで行う(以前はeffectでsetしていた)
 
   // 地図は現在地を中心に表示しつつ、マーカーは店舗の座標に立てる。
   // ★修正：現在地が取得できない(位置情報の許可が無い等)場合でも地図を表示できるよう、
   // 現在地が無ければ店舗の座標を中心にする。現在地が後から取得できた場合は、
   // positionの変化でこのeffectが再実行され、現在地中心の地図に作り直される。
+  // ★修正：依存をstoreオブジェクト全体ではなく店舗の座標(数値)にする。
+  // コメント・写真の追加などでstoreを取り直しても、座標が同じなら地図は作り直さない。
+  const storeLongitude = store?.longitude;
+  const storeLatitude = store?.latitude;
   useEffect(() => {
     if (!mapContainer.current) return;
-    if (!store) return;
+    if (storeLongitude === undefined || storeLatitude === undefined) return;
 
     const center: [number, number] =
       position.latitude !== null && position.longitude !== null
         ? [position.longitude, position.latitude]
-        : [store.longitude, store.latitude];
+        : [storeLongitude, storeLatitude];
 
     const styleUrl = `https://maps.geo.${region}.amazonaws.com/maps/v0/maps/${mapName}/style-descriptor?key=${apiKey}`;
 
@@ -273,7 +277,7 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     });
 
     const marker = new maplibregl.Marker({ color: "#c8442d" })
-      .setLngLat([store.longitude, store.latitude])
+      .setLngLat([storeLongitude, storeLatitude])
       .addTo(map);
     markerRef.current = marker;
 
@@ -282,14 +286,21 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
       mapRef.current = null;
       markerRef.current = null;
     };
-  }, [position, store]);
+  }, [
+    position.longitude,
+    position.latitude,
+    storeLongitude,
+    storeLatitude,
+    apiKey,
+    mapName,
+    region,
+  ]);
 
   // メニュー一覧の取得
+  // ★修正：店舗情報の取得と同じく、再取得の間は取得済みの一覧を表示し続ける
+  // (lint: set-state-in-effect対応)
   useEffect(() => {
     let cancelled = false;
-
-    setMenuStatus("loading");
-    setMenuErrorMessage(null);
 
     const apiUrl =
       `${API_BASE_URL}/stores/menus`;
@@ -733,7 +744,8 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                 )}
               </dd>
 
-              {store.store_url && (
+              {/* ★修正：http(s)のURLのときだけリンクとして表示する(C17) */}
+              {store.store_url && isHttpUrl(store.store_url) && (
                 <>
                   <dt>店舗ページ</dt>
                   <dd>
@@ -911,7 +923,9 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
       </main>
 
       {/* 店舗情報更新モーダル(別ファイル) */}
-      {store && (
+      {/* ★修正：開いている間だけ描画する。開くたびに新しく作られるため、
+          フォームの初期化をモーダル側のeffectで行う必要がなくなる */}
+      {store && isUpdateStoreModalOpen && (
         <UpdateStoreModal
           store={store}
           isOpen={isUpdateStoreModalOpen}
@@ -947,8 +961,10 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
       </dialog>
 
       {/* メニュー更新モーダル(別ファイル) */}
+      {/* ★修正：key={menu_id}で、編集するメニューごとに新しく作る */}
       {editingMenu && (
         <UpdateMenuModal
+          key={editingMenu.menu_id}
           menu={editingMenu}
           isOpen={editingMenu !== null}
           onClose={() => setEditingMenu(null)}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "react-oidc-context";
 
 interface HeaderProps {
@@ -23,15 +23,12 @@ const LOGOUT_REDIRECT_URI = "https://main.dc2x1tgfccujd.amplifyapp.com";
 export function Header({ onGoHome }: HeaderProps) {
   const auth = useAuth();
 
-  // ★追加：ログイン失敗時のエラーメッセージを、閉じるまで画面に表示し続けるための状態。
-  // auth.error自体はライブラリ側の内部状態なので、こちらでコピーして持っておく。
-  const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (auth.error) {
-      setAuthErrorMessage(auth.error.message);
-    }
-  }, [auth.error]);
+  // ★追加：ログイン失敗時のエラーメッセージを、閉じるまで画面に表示し続ける。
+  // ★修正：auth.errorをeffectでstateにコピーするのをやめ、「閉じたエラー」だけを
+  // 覚えておいて、表示するメッセージは描画時に算出する(lint: set-state-in-effect対応)。
+  const [dismissedError, setDismissedError] = useState<Error | null>(null);
+  const authErrorMessage =
+    auth.error && auth.error !== dismissedError ? auth.error.message : null;
 
   // Cognitoは標準的なOIDCの「ログアウトエンドポイント」を持たないため、
   // ログアウトは①ブラウザ側が持っているトークンを破棄、②Cognito自身の
@@ -75,7 +72,7 @@ export function Header({ onGoHome }: HeaderProps) {
       {authErrorMessage && (
         <div className="app-auth-error-banner" role="alert">
           <p>ログインできませんでした：{authErrorMessage}</p>
-          <button type="button" onClick={() => setAuthErrorMessage(null)}>
+          <button type="button" onClick={() => setDismissedError(auth.error ?? null)}>
             閉じる
           </button>
         </div>

@@ -4,6 +4,7 @@ import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に�
 import { ImagePickerWithRotation } from "../components/ImagePickerWithRotation"; // 実際の配置場所に合わせてパスを調整してください
 import { buildAuthHeaders } from "../utils/authHeaders"; // 実際の配置場所に合わせてパスを調整してください
 import { API_BASE_URL, readErrorMessage } from "../utils/api";
+import { isHttpUrl } from "../utils/url";
 
 interface StoreForUpdate {
   place_id: string;
@@ -44,16 +45,9 @@ export function UpdateStoreModal({
   const [status, setStatus] = useState<Status>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    setCategory(store.store_category_name);
-    setStoreUrl(store.store_url);
-    setMealTime(store.meal_time);
-    setImageFile(null);
-    setImageRotation(0);
-    setStatus("idle");
-    setErrorMessage(null);
-  }, [isOpen, store]);
+  // ★修正：開くたびのフォーム初期化はeffectで行わない。呼び出し側
+  // (ShowStoreDetail.tsx)が開いている間だけ描画するため、開くたびに
+  // 上のuseStateの初期値(storeの現在値)で作り直される(lint: set-state-in-effect対応)。
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -78,6 +72,16 @@ export function UpdateStoreModal({
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    // ★追加：店舗URLはhttp(s)のURLか空欄のみ受け付ける(UpdateStore.pyと同じ基準、C17)
+    const trimmedStoreUrl = storeUrl.trim();
+    if (trimmedStoreUrl && !isHttpUrl(trimmedStoreUrl)) {
+      setErrorMessage(
+        "店舗URLは http:// または https:// で始まるURLを入力してください",
+      );
+      setStatus("error");
+      return;
+    }
+
     setStatus("loading");
     setErrorMessage(null);
 
@@ -101,7 +105,7 @@ export function UpdateStoreModal({
         body: JSON.stringify({
           place_id: store.place_id,
           store_category_name: category,
-          store_url: storeUrl,
+          store_url: trimmedStoreUrl,
           meal_time: mealTime,
           image_url,
         }),

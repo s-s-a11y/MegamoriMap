@@ -1,10 +1,17 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import "./App.css";
 import { Header } from "./components/Header";
 import { HomePage } from "./components/Home";
 import { RegisterStorePage } from "./components/RegistStore";
 import { RegisterMenuPage } from "./components/RegistMenu";
-import { StoreDetailPage } from "./components/ShowStoreDetail";
+
+// ★修正：店舗詳細画面は地図ライブラリ(maplibre-gl)を含み、JS全体の大半を占めるため、
+// 画面を開いた時にだけ読み込む(初回表示で読み込むJSを軽くする)
+const StoreDetailPage = lazy(() =>
+  import("./components/ShowStoreDetail").then((module) => ({
+    default: module.StoreDetailPage,
+  })),
+);
 
 // 表示する画面の種類。
 export type ViewName = "map" | "regist-store" | "regist-menu" | "store-detail";
@@ -61,7 +68,10 @@ function App() {
           return <HomePage onNavigate={handleNavigate} />;
         }
         return (
+          // ★修正：店舗が変わったら画面ごと作り直し、表示状態(カルーセル位置・
+          // 読み込み状態など)を初期化する
           <StoreDetailPage
+            key={selectedPlaceId}
             placeId={selectedPlaceId}
             onNavigate={handleNavigate}
           />
@@ -77,7 +87,9 @@ function App() {
           currentView !== "map" ? () => handleNavigate("map") : undefined
         }
       />
-      <div className="content-area">{renderView()}</div>
+      <div className="content-area">
+        <Suspense fallback={<p>読み込み中...</p>}>{renderView()}</Suspense>
+      </div>
     </>
   );
 }
