@@ -18,14 +18,23 @@ const StoreDetailPage = lazy(() =>
 // 表示する画面の種類。
 export type ViewName = "map" | "regist-store" | "regist-menu" | "store-detail";
 
-function App() {
+// ★追加：最初に表示する画面を指定する(確認モード src/dev/preview.tsx 用)。
+// 通常の起動では指定しないので、今までどおりHome画面から始まる。
+interface AppProps {
+  initialView?: ViewName;
+  initialPlaceId?: string | null;
+}
+
+function App({ initialView = "map", initialPlaceId = null }: AppProps) {
   // ★追加(機能追加#1)：ログイン中の利用者のユーザー名。ヘッダーとHomeで共有する
   const { userName, saveUserName } = useMyUser();
 
   // 表示するコンポーネントを決定するState
-  const [currentView, setCurrentView] = useState<ViewName>("map");
+  const [currentView, setCurrentView] = useState<ViewName>(initialView);
   // 店舗詳細・メニュー登録画面でどのplace_idを扱うかを保持するState
-  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(
+    initialPlaceId,
+  );
   // ★追加：メニュー登録画面に「今どの店舗に登録しているか」を表示するための店舗名
   // (place_id自体は画面に表示しないが、店舗名は表示したいためprops経由で運ぶ)
   const [selectedStoreName, setSelectedStoreName] = useState<string | null>(
