@@ -25,7 +25,11 @@ const LOGOUT_REDIRECT_URI = "https://main.dc2x1tgfccujd.amplifyapp.com";
 // アプリ全体で共通の、画面上部に固定表示されるヘッダー。
 // タイトルは常に固定文言(「メガ盛りマップ」)で、ページごとに変わらない。
 // App.tsxの最上位で1回だけ描画される想定(各ページが個別に描画しない)。
-export function Header({ onGoHome, userName = null, onSaveUserName }: HeaderProps) {
+export function Header({
+  onGoHome,
+  userName = null,
+  onSaveUserName,
+}: HeaderProps) {
   const auth = useAuth();
   // ★追加(機能追加#1)：ユーザー名の変更フォームを開いているか
   const [isEditingName, setIsEditingName] = useState(false);
@@ -68,7 +72,7 @@ export function Header({ onGoHome, userName = null, onSaveUserName }: HeaderProp
             <span className="app-header__user">
               {userName} さん
               <button type="button" onClick={() => setIsEditingName(true)}>
-                変更
+                ユーザー名変更
               </button>
             </span>
           )}
@@ -101,7 +105,10 @@ export function Header({ onGoHome, userName = null, onSaveUserName }: HeaderProp
       {authErrorMessage && (
         <div className="app-auth-error-banner" role="alert">
           <p>ログインできませんでした：{authErrorMessage}</p>
-          <button type="button" onClick={() => setDismissedError(auth.error ?? null)}>
+          <button
+            type="button"
+            onClick={() => setDismissedError(auth.error ?? null)}
+          >
             閉じる
           </button>
         </div>

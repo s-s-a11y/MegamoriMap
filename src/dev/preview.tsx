@@ -114,6 +114,8 @@ function installFakeApi(s: Scenario) {
           images: [],
           business_hours: ["月-金: 11:00 - 22:00", "土, 日: 11:00 - 21:00"],
           price_reports: [],
+          walk_minutes: 11,
+          walk_distance_m: 650,
         });
       case "/stores/menus":
         return json({

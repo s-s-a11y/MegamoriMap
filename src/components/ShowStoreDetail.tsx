@@ -15,7 +15,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { API_BASE_URL, readErrorMessage } from "../utils/api";
 import { isHttpUrl } from "../utils/url";
-import { displayUserName, formatPostedDate } from "../utils/format";
+import { displayUserName, formatPostedDate, formatWalk } from "../utils/format";
 
 // アプリ起動時に一度だけ、workerの場所をMapLibreに教える
 maplibregl.setWorkerUrl(workerUrl);
@@ -72,6 +72,9 @@ interface StoreDetail {
   // ★追加：夜(dinner)の店の予算帯表示に使う、申告額の平均と申告一覧
   price_per_person: number;
   price_reports: StorePriceReport[];
+  // ★追加(機能追加#2)：会社からの徒歩時間(分)と距離(m)。計算できなければnull
+  walk_minutes?: number | null;
+  walk_distance_m?: number | null;
 }
 
 // meal_timeの値を、画面表示用の日本語に変換する
@@ -811,6 +814,14 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
 
               <dt>住所</dt>
               <dd>{store.address_label}</dd>
+
+              {/* ★追加(機能追加#2)：会社からの徒歩時間。計算できていなければ非表示 */}
+              {formatWalk(store.walk_minutes, store.walk_distance_m) && (
+                <>
+                  <dt>会社から</dt>
+                  <dd>{formatWalk(store.walk_minutes, store.walk_distance_m)}</dd>
+                </>
+              )}
 
               <dt>予算帯</dt>
               <dd>
