@@ -403,3 +403,86 @@ dialog::backdrop {
   color: var(--moss);
   font-weight: 500;
 }
+
+/* ================================================================
+   ★追加(機能追加#1)：ユーザー名の表示・登録、メニューへのコメント
+   ================================================================ */
+
+/* ヘッダー内のユーザー名と「変更」ボタン */
+.app-header__user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 8px;
+}
+
+/* ヘッダーの下に出すユーザー名の変更フォーム(ヘッダーと同じく固定表示) */
+.app-header__name-edit {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  z-index: 998;
+  padding: 12px 16px;
+  background: var(--paper-soft);
+  border-bottom: 1px solid var(--line);
+}
+
+/* ユーザー名の入力フォーム(Home上部の案内・ヘッダーの変更で共通) */
+.user-name-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-name-form input {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.user-name-form p[role="alert"] {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--brick);
+}
+
+/* Home上部の、ユーザー名が未設定の人への案内 */
+.user-name-banner {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  background: var(--paper-soft);
+  border: 1px solid var(--turmeric);
+  border-radius: 8px;
+}
+
+.user-name-banner p {
+  margin: 0 0 8px;
+}
+
+/* メニューカード内のコメント一覧と投稿欄 */
+.menu-comments {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.menu-comments ul {
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.menu-comments li p {
+  margin: 0;
+}
+
+.menu-comments__empty {
+  margin: 0 0 8px;
+  font-size: 0.9em;
+}
+
+.menu-comments textarea {
+  width: 100%;
+  box-sizing: border-box;
+}

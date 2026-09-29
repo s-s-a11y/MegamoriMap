@@ -4,6 +4,7 @@ import { Header } from "./components/Header";
 import { HomePage } from "./components/Home";
 import { RegisterStorePage } from "./components/RegistStore";
 import { RegisterMenuPage } from "./components/RegistMenu";
+import { useMyUser } from "./utils/useMyUser";
 
 // ★修正：店舗詳細画面は地図ライブラリ(maplibre-gl)を含み、JS全体の大半を占めるため、
 // 画面を開いた時にだけ読み込む(初回表示で読み込むJSを軽くする)
@@ -17,6 +18,9 @@ const StoreDetailPage = lazy(() =>
 export type ViewName = "map" | "regist-store" | "regist-menu" | "store-detail";
 
 function App() {
+  // ★追加(機能追加#1)：ログイン中の利用者のユーザー名。ヘッダーとHomeで共有する
+  const { userName, saveUserName } = useMyUser();
+
   // 表示するコンポーネントを決定するState
   const [currentView, setCurrentView] = useState<ViewName>("map");
   // 店舗詳細・メニュー登録画面でどのplace_idを扱うかを保持するState
@@ -47,7 +51,13 @@ function App() {
   const renderView = () => {
     switch (currentView) {
       case "map":
-        return <HomePage onNavigate={handleNavigate} />;
+        return (
+          <HomePage
+            onNavigate={handleNavigate}
+            userName={userName}
+            onSaveUserName={saveUserName}
+          />
+        );
       case "regist-store":
         return <RegisterStorePage onNavigate={handleNavigate} />;
       case "regist-menu":
@@ -86,6 +96,8 @@ function App() {
         onGoHome={
           currentView !== "map" ? () => handleNavigate("map") : undefined
         }
+        userName={userName}
+        onSaveUserName={saveUserName}
       />
       <div className="content-area">
         <Suspense fallback={<p>読み込み中...</p>}>{renderView()}</Suspense>

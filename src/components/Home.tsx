@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatBudgetBand, getBudgetSourcePrice } from "../utils/FormatPrice"; // 実際の配置場所に合わせてパスを調整してください
 import "../css_components/Home.css";
+import { UserNameForm } from "./UserNameForm";
 import { API_BASE_URL, readErrorMessage } from "../utils/api";
 
 // 店舗情報格納用typeの定義
@@ -43,9 +44,16 @@ interface HomePageProps {
     placeId?: string,
     storeName?: string,
   ) => void;
+  // ★追加(機能追加#1)：ログイン中の利用者のユーザー名(null=未ログイン・取得中、""=未設定)
+  userName?: string | null;
+  onSaveUserName?: (name: string) => Promise<void>;
 }
 
-export function HomePage({ onNavigate }: HomePageProps) {
+export function HomePage({
+  onNavigate,
+  userName = null,
+  onSaveUserName,
+}: HomePageProps) {
   //   店舗情報格納用State
   const [stores, setStores] = useState<Store[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<string>(ALL_CATEGORIES);
@@ -153,6 +161,16 @@ export function HomePage({ onNavigate }: HomePageProps) {
       {/* ★変更：「メニューを登録する」ボタンを削除。
           メニュー登録は店舗詳細画面から行う形式に変更したため。
           タイトル(h1)も共通ヘッダー側に移したため、ここでは持たない。 */}
+      {/* ★追加(機能追加#1)：ユーザー名が未設定のログイン中の利用者に、登録を案内する */}
+      {userName === "" && onSaveUserName && (
+        <section className="user-name-banner" role="status">
+          <p>
+            ユーザー名が登録されていません。登録すると、店舗やコメントの投稿者として表示されます。
+          </p>
+          <UserNameForm submitLabel="ユーザー名を登録" onSave={onSaveUserName} />
+        </section>
+      )}
+
       <nav>
         <button onClick={() => onNavigate("regist-store")}>
           店舗を登録する

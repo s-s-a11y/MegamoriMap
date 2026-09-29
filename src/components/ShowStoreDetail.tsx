@@ -15,6 +15,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { API_BASE_URL, readErrorMessage } from "../utils/api";
 import { isHttpUrl } from "../utils/url";
+import { displayUserName, formatPostedDate } from "../utils/format";
 
 // アプリ起動時に一度だけ、workerの場所をMapLibreに教える
 maplibregl.setWorkerUrl(workerUrl);
@@ -29,6 +30,9 @@ interface Position {
 interface StoreComment {
   comment: string;
   posted_at: string;
+  // ★追加(機能追加#1)：投稿者のIDと名前(投稿者が記録されていない古いコメントは空)
+  posted_by?: string;
+  posted_by_name?: string;
 }
 
 // 追加ギャラリー写真1件分(ShowStoreDetail.py / AddStoreImages.pyの1件と一致)
@@ -57,6 +61,8 @@ interface StoreDetail {
   images: StoreImage[];
   // ★追加(U9)：登録者のID(Cognitoのsub)。削除ボタンを出すかの判定に使う
   created_by: string;
+  // ★追加(機能追加#1)：登録者のユーザー名(未設定なら空)
+  created_by_name: string;
   longitude: number;
   latitude: number;
   // ★追加：昼/晩の絞り込み用(居酒屋対応)
@@ -83,7 +89,13 @@ interface Menu {
   image_url: string;
   // ★追加(U9)：登録者のID(Cognitoのsub)。削除ボタンを出すかの判定に使う
   created_by: string;
+  // ★追加(機能追加#1)：登録者のユーザー名と、メニューへのコメント(店舗コメントと同じ形)
+  created_by_name: string;
+  comments: StoreComment[];
 }
+
+// ★追加(機能追加#1)：メニューへのコメントの最大文字数(AddMenuComment.pyと同じ)
+const MENU_COMMENT_MAX_LENGTH = 200;
 
 // ★追加(U9)：管理者はCognitoのこのグループに属する人(DeleteStore.py・DeleteMenu.pyと同じ値)
 const ADMIN_GROUP = "megamorimap-admin";
@@ -176,6 +188,17 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     "idle" | "loading" | "error"
   >("idle");
   const [addCommentError, setAddCommentError] = useState<string | null>(null);
+
+  // ★追加(機能追加#1)：メニューへのコメントの入力中の内容・投稿中のメニュー・エラー(メニューごと)
+  const [menuCommentDrafts, setMenuCommentDrafts] = useState<
+    Record<string, string>
+  >({});
+  const [postingMenuCommentId, setPostingMenuCommentId] = useState<
+    string | null
+  >(null);
+  const [menuCommentErrors, setMenuCommentErrors] = useState<
+    Record<string, string | null>
+  >({});
 
   // ★追加：使った金額の申告フォームまわりの状態(夜の店専用)
   const [newPriceAmount, setNewPriceAmount] = useState("");
@@ -466,6 +489,42 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     }
   };
 
+  // ★追加(機能追加#1)：メニューへのコメントを1件追加する
+  const handleAddMenuComment = async (
+    e: React.SubmitEvent<HTMLFormElement>,
+    menuId: string,
+  ) => {
+    e.preventDefault();
+    const comment = (menuCommentDrafts[menuId] ?? "").trim();
+    if (!comment) return;
+
+    setPostingMenuCommentId(menuId);
+    setMenuCommentErrors((errors) => ({ ...errors, [menuId]: null }));
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/menus/addcomment`, {
+        method: "POST",
+        headers: buildAuthHeaders(auth.user?.id_token),
+        body: JSON.stringify({ menu_id: menuId, comment }),
+      });
+
+      if (!res.ok) {
+        throw new Error(await readErrorMessage(res));
+      }
+
+      setMenuCommentDrafts((drafts) => ({ ...drafts, [menuId]: "" }));
+      setMenuRefreshKey((key) => key + 1);
+    } catch (err) {
+      setMenuCommentErrors((errors) => ({
+        ...errors,
+        [menuId]:
+          err instanceof Error ? err.message : "コメントの投稿に失敗しました",
+      }));
+    } finally {
+      setPostingMenuCommentId(null);
+    }
+  };
+
   // コメントを1件追加する
   const handleAddComment = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -746,6 +805,10 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                 </>
               )}
 
+              {/* ★追加(機能追加#1)：店舗を登録した人 */}
+              <dt>登録者</dt>
+              <dd>{displayUserName(store.created_by_name)}</dd>
+
               <dt>住所</dt>
               <dd>{store.address_label}</dd>
 
@@ -802,7 +865,11 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                 {store.comments.map((c, index) => (
                   <li key={index}>
                     <p>{c.comment}</p>
-                    <small>{c.posted_at}</small>
+                    {/* ★修正(機能追加#1)：投稿者と投稿日を表示する */}
+                    <small>
+                      {displayUserName(c.posted_by_name)}・
+                      {formatPostedDate(c.posted_at)}
+                    </small>
                   </li>
                 ))}
               </ul>
@@ -917,6 +984,61 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                     <strong>{menu.menu_name}</strong>
                     <span>¥{menu.price.toLocaleString()}</span>
                     {menu.memo && <p>{menu.memo}</p>}
+
+                    {/* ★追加(機能追加#1)：メニューへのコメント(投稿者・投稿日付き) */}
+                    <div className="menu-comments">
+                      {menu.comments.length > 0 ? (
+                        <ul>
+                          {menu.comments.map((c, index) => (
+                            <li key={index}>
+                              <p>{c.comment}</p>
+                              <small>
+                                {displayUserName(c.posted_by_name)}・
+                                {formatPostedDate(c.posted_at)}
+                              </small>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="menu-comments__empty">
+                          まだコメントはありません。
+                        </p>
+                      )}
+
+                      {auth.isAuthenticated && (
+                        <form
+                          onSubmit={(e) => handleAddMenuComment(e, menu.menu_id)}
+                        >
+                          <textarea
+                            value={menuCommentDrafts[menu.menu_id] ?? ""}
+                            onChange={(e) =>
+                              setMenuCommentDrafts((drafts) => ({
+                                ...drafts,
+                                [menu.menu_id]: e.target.value,
+                              }))
+                            }
+                            rows={2}
+                            maxLength={MENU_COMMENT_MAX_LENGTH}
+                            placeholder="このメニューへのコメント"
+                            aria-label={`${menu.menu_name}へのコメント`}
+                          />
+                          {menuCommentErrors[menu.menu_id] && (
+                            <p role="alert">{menuCommentErrors[menu.menu_id]}</p>
+                          )}
+                          <button
+                            type="submit"
+                            disabled={
+                              postingMenuCommentId === menu.menu_id ||
+                              !(menuCommentDrafts[menu.menu_id] ?? "").trim()
+                            }
+                          >
+                            {postingMenuCommentId === menu.menu_id
+                              ? "投稿中..."
+                              : "コメントする"}
+                          </button>
+                        </form>
+                      )}
+                    </div>
 
                     <div className="menu-card-actions">
                       <button
