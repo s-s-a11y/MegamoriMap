@@ -1,10 +1,20 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- ★修正(C49)：アイコンをアプリのアイコン(どんぶり＋池)にそろえる -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>megamorimap</title>
+    <!-- ★修正(C49)：タブやホーム画面に出る名前を日本語のアプリ名に -->
+    <title>池ごはんマップ</title>
+    <!-- ★追加(C49)：スマホのホーム画面に追加できるようにする(PWA) -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#241511" />
+    <!-- iPhone(Safari)用：ホーム画面のアイコンと、ホーム画面から開いたときの表示 -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="池ごはん" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   </head>
   <body>
     <div id="root"></div>

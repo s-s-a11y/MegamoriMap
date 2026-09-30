@@ -1,0 +1,16 @@
+{
+  "name": "池ごはんマップ",
+  "short_name": "池ごはん",
+  "description": "池袋周辺のメガ盛りの店を記録・共有するマップ",
+  "lang": "ja",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fbeac8",
+  "theme_color": "#241511",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
