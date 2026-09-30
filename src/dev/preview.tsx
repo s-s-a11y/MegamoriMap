@@ -104,8 +104,8 @@ function installFakeApi(s: Scenario) {
     { place_id: "cand-5", title: "候補とんかつ", address_label: "東京都豊島区池袋1-5-5", category_name: "レストラン", longitude: 139.711, latitude: 35.737, walk_minutes: 10, walk_distance_m: 760 },
   ];
   let wishlist = [
-    { place_id: PREVIEW_PLACE_ID, title: "プレビュー食堂 池袋本店", address_label: "東京都豊島区西池袋1-1-1", category_name: "レストラン", meal_time: "lunch", longitude: 139.7109, latitude: 35.7295, created_at: "20260929120000", registered: true, walk_minutes: null, walk_distance_m: null },
-    { place_id: "wish-1", title: "気になる居酒屋", address_label: "東京都豊島区池袋2-9-9", category_name: "バー、パブ、居酒屋", meal_time: "dinner", longitude: 139.71, latitude: 35.734, created_at: "20260930090000", registered: false, walk_minutes: 6, walk_distance_m: 450 },
+    { place_id: PREVIEW_PLACE_ID, title: "プレビュー食堂 池袋本店", address_label: "東京都豊島区西池袋1-1-1", category_name: "レストラン", meal_time: "lunch", longitude: 139.7109, latitude: 35.7295, created_at: "20260929120000", registered: true, reported_closed: false, walk_minutes: null, walk_distance_m: null },
+    { place_id: "wish-1", title: "気になる居酒屋", address_label: "東京都豊島区池袋2-9-9", category_name: "バー、パブ、居酒屋", meal_time: "dinner", longitude: 139.71, latitude: 35.734, created_at: "20260930090000", registered: false, reported_closed: true, walk_minutes: 6, walk_distance_m: 450 },
   ];
 
   const json = (body: unknown, status = 200) =>
@@ -132,7 +132,7 @@ function installFakeApi(s: Scenario) {
         return json({ items: wishlist });
       case "/wishlist/add": {
         const c = candidatePool.find((x) => x.place_id === body.place_id);
-        if (c) wishlist = [{ ...c, meal_time: body.meal_time, created_at: daysAgo(0) + "999999", registered: false }, ...wishlist];
+        if (c) wishlist = [{ ...c, meal_time: body.meal_time, created_at: daysAgo(0) + "999999", registered: false, reported_closed: false }, ...wishlist];
         return json({ message: "Added to wishlist" });
       }
       case "/wishlist/delete":

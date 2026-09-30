@@ -35,6 +35,8 @@ interface WishlistItem {
   created_at: string;
   // 後から誰かに店舗登録された店は true(店舗詳細へのリンクに切り替える)
   registered: boolean;
+  // ★追加(C43)：誰かが「閉業していた」と報告した店
+  reported_closed: boolean;
   walk_minutes: number | null;
   walk_distance_m: number | null;
 }
@@ -160,6 +162,24 @@ export function WishlistPage({ onNavigate, onRegistStore }: WishlistPageProps) {
     }
   };
 
+  // ★追加(C43)：「閉業していた」の報告。全員の候補から除かれ、自分のリストからも外れる
+  const handleReportClosed = async (placeId: string, title: string) => {
+    if (!window.confirm(`「${title}」を閉業していた店として報告しますか？\n全員の候補に出なくなります。`)) {
+      return;
+    }
+    setBusyPlaceId(placeId);
+    setActionError(null);
+    try {
+      await post("/wishlist/report-closed", { place_id: placeId, title });
+      setCandidates((list) => list.filter((c) => c.place_id !== placeId));
+      setItems((list) => list.filter((i) => i.place_id !== placeId));
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "閉業の報告に失敗しました");
+    } finally {
+      setBusyPlaceId(null);
+    }
+  };
+
   if (!auth.isAuthenticated) {
     return (
       <main className="wishlist">
@@ -223,7 +243,16 @@ export function WishlistPage({ onNavigate, onRegistStore }: WishlistPageProps) {
                   onClick={() => handleAdd(c)}
                   disabled={busyPlaceId !== null}
                 >
-                  {busyPlaceId === c.place_id ? "追加中..." : "リストに追加"}
+                  {busyPlaceId === c.place_id ? "処理中..." : "リストに追加"}
+                </button>
+                {/* ★追加(C43) */}
+                <button
+                  type="button"
+                  className="wishlist__closed-button"
+                  onClick={() => handleReportClosed(c.place_id, c.title)}
+                  disabled={busyPlaceId !== null}
+                >
+                  閉業していた
                 </button>
               </li>
             ))}
@@ -250,6 +279,10 @@ export function WishlistPage({ onNavigate, onRegistStore }: WishlistPageProps) {
                     {MEAL_TIME_LABELS[item.meal_time] ?? item.meal_time}
                   </span>
                 </span>
+                {/* ★追加(C43)：他の人が閉業を報告した店 */}
+                {item.reported_closed && !item.registered && (
+                  <span className="wishlist__closed-note">閉業の報告があります</span>
+                )}
                 {item.category_name && <span className="wishlist__meta">{item.category_name}</span>}
                 <span className="wishlist__meta">{item.address_label}</span>
                 {item.registered ? (
@@ -283,6 +316,17 @@ export function WishlistPage({ onNavigate, onRegistStore }: WishlistPageProps) {
                       行ってきたので登録する
                     </button>
                   </>
+                )}
+                {/* ★追加(C43)：未登録の店だけ閉業を報告できる(登録済みの店は店舗の削除で扱う) */}
+                {!item.registered && !item.reported_closed && (
+                  <button
+                    type="button"
+                    className="wishlist__closed-button"
+                    onClick={() => handleReportClosed(item.place_id, item.title)}
+                    disabled={busyPlaceId !== null}
+                  >
+                    閉業していた
+                  </button>
                 )}
                 <button
                   type="button"

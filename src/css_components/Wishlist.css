@@ -122,3 +122,26 @@
   color: var(--paper-soft);
   background: var(--brick);
 }
+
+/* ---- ★追加(C43)：閉業の報告 ---- */
+
+/* 「閉業していた」は目立たせすぎないよう、文字だけのボタンにする */
+.wishlist__closed-button,
+.wishlist__closed-button:hover:not(:disabled) {
+  padding: 4px 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(42, 23, 16, 0.65);
+  background: transparent;
+  text-decoration: underline;
+}
+
+.wishlist__closed-button:hover:not(:disabled) {
+  color: var(--brick);
+}
+
+.wishlist__closed-note {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brick);
+}
