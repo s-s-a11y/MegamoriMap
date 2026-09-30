@@ -150,3 +150,93 @@
   max-width: none;
   margin: 0 0 8px;
 }
+
+/* ---- ★追加(C38)：新着(NEW)の印と、昼/晩のラベル ---- */
+
+/* 写真の上に「NEW」を重ねるための入れ物 */
+.store-card__media {
+  position: relative;
+  display: block;
+}
+
+.store-card__new {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: var(--persimmon);
+  color: var(--paper-soft);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.store-card__category {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.store-card__meal {
+  padding: 0 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--paper-soft);
+}
+
+/* 昼はからし色、晩は夜の暗がりに近い濃い茶色 */
+.store-card__meal--lunch {
+  background: var(--turmeric);
+  color: var(--ink);
+}
+
+.store-card__meal--dinner {
+  background: var(--charcoal);
+}
+
+/* ---- ★追加(C40)：「今日どこ行く？」 ---- */
+.home-random {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0 24px;
+}
+
+.home-random__button {
+  padding: 12px 32px;
+  font-size: 17px;
+  border-radius: 24px;
+}
+
+.home-random__result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: min(100%, 24em);
+  padding: 16px;
+  border: 2px solid var(--turmeric);
+  border-radius: 8px;
+  background: var(--paper-soft);
+  color: var(--ink); /* App.css の [role="status"] の緑色を打ち消す */
+}
+
+.home-random__lead {
+  font-size: 13px;
+  color: var(--persimmon-dark);
+  font-weight: 700;
+}
+
+.home-random__name {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.home-random__meta {
+  font-size: 13px;
+  color: rgba(42, 23, 16, 0.75);
+}

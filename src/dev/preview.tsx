@@ -71,6 +71,18 @@ function createFakeAuth(s: Scenario): AuthContextProps {
   } as unknown as AuthContextProps;
 }
 
+// 確認用の写真。色付きの画像をその場で作る(外部への通信なし)
+function fakePhoto(label: string, color: string, w = 800, h = 600): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="100%" height="100%" fill="${color}"/><text x="50%" y="50%" font-size="64" text-anchor="middle" dominant-baseline="middle" fill="#fff">${label}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+// n日前の日付をYYYYMMDD形式で返す(新着(NEW)の印の確認用)
+function daysAgo(n: number): string {
+  const d = new Date(Date.now() - n * 24 * 60 * 60 * 1000);
+  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+}
+
 // ---- 作り物のAPI応答 ----
 function installFakeApi(s: Scenario) {
   let userName = s.userName;
@@ -78,8 +90,9 @@ function installFakeApi(s: Scenario) {
   const nameOf = (id: string) => (id === ME ? userName : names[id] ?? "");
 
   const stores = [
-    { place_id: PREVIEW_PLACE_ID, title: "プレビュー食堂 池袋本店", avg_price: 1200, address_label: "東京都豊島区西池袋1-1-1", store_url: "https://example.com", longitude: 139.7109, latitude: 35.7295, store_category_name: "定食", image_url: "", meal_time: "lunch", price_per_person: 0 },
-    { place_id: "preview-place-2", title: "プレビュー酒場", avg_price: 0, address_label: "東京都豊島区東池袋1-1-1", store_url: "", longitude: 139.713, latitude: 35.73, store_category_name: "居酒屋", image_url: "", meal_time: "dinner", price_per_person: 3500 },
+    { place_id: PREVIEW_PLACE_ID, title: "プレビュー食堂 池袋本店", avg_price: 1200, address_label: "東京都豊島区西池袋1-1-1", store_url: "https://example.com", longitude: 139.7109, latitude: 35.7295, store_category_name: "定食", image_url: fakePhoto("表紙", "#b23913"), meal_time: "lunch", price_per_person: 0, created_at: daysAgo(2) },
+    { place_id: "preview-place-2", title: "プレビュー酒場", avg_price: 0, address_label: "東京都豊島区東池袋1-1-1", store_url: "", longitude: 139.713, latitude: 35.73, store_category_name: "居酒屋", image_url: "", meal_time: "dinner", price_per_person: 3500, created_at: daysAgo(30) },
+    { place_id: "preview-place-3", title: "プレビューらーめん", avg_price: 950, address_label: "東京都豊島区南池袋1-1-1", store_url: "", longitude: 139.711, latitude: 35.728, store_category_name: "ラーメン", image_url: fakePhoto("らーめん", "#46684a"), meal_time: "lunch", price_per_person: 0, created_at: daysAgo(10) },
   ];
 
   const json = (body: unknown, status = 200) =>
@@ -111,7 +124,10 @@ function installFakeApi(s: Scenario) {
             { comment: "量がとにかく多い。ご飯のおかわり無料。", posted_at: "20260910", posted_by: OTHER, posted_by_name: nameOf(OTHER) },
             { comment: "投稿者の記録がない古いコメント", posted_at: "20260901", posted_by_name: "" },
           ],
-          images: [],
+          images: [
+            { image_url: fakePhoto("縦長の写真", "#46684a", 600, 900), posted_at: "20260920" },
+            { image_url: fakePhoto("写真3", "#e8a33d"), posted_at: "20260921" },
+          ],
           business_hours: ["月-金: 11:00 - 22:00", "土, 日: 11:00 - 21:00"],
           price_reports: [],
           walk_minutes: 11,
@@ -120,7 +136,7 @@ function installFakeApi(s: Scenario) {
       case "/stores/menus":
         return json({
           menus: [
-            { menu_id: "preview-menu-1", menu_name: "唐揚げ定食 特盛", price: 1200, memo: "ご飯800g", image_url: "", created_by: s.storeOwner, created_by_name: nameOf(s.storeOwner), comments: [{ comment: "唐揚げが8個も入っていた", posted_at: "20260920", posted_by: ME, posted_by_name: nameOf(ME) }] },
+            { menu_id: "preview-menu-1", menu_name: "唐揚げ定食 特盛", price: 1200, memo: "ご飯800g", image_url: fakePhoto("唐揚げ定食", "#8c2f22"), created_by: s.storeOwner, created_by_name: nameOf(s.storeOwner), comments: [{ comment: "唐揚げが8個も入っていた", posted_at: "20260920", posted_by: ME, posted_by_name: nameOf(ME) }] },
             { menu_id: "preview-menu-2", menu_name: "カツカレー 大盛り", price: 1100, memo: "", image_url: "", created_by: OTHER, created_by_name: nameOf(OTHER), comments: [] },
           ],
         });

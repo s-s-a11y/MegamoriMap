@@ -182,8 +182,15 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
   const menuDeleteConfirmDialogRef = useRef<HTMLDialogElement | null>(null);
 
   // ★追加：メニュー写真の拡大表示(ライトボックス)まわりの状態
-  const [enlargedImageUrl, setEnlargedImageUrl] = useState<string | null>(null);
+  // ★修正(C36)：店舗写真も拡大できるよう、表示する写真の一覧と表示中の番号を持つ。
+  // fromStoreGallery は店舗写真から開いたか(切り替えた写真を、閉じた後のカルーセルにも反映する)
+  const [lightbox, setLightbox] = useState<{
+    images: string[];
+    index: number;
+    fromStoreGallery: boolean;
+  } | null>(null);
   const imageLightboxDialogRef = useRef<HTMLDialogElement | null>(null);
+  const lightboxTouchStartXRef = useRef<number | null>(null);
 
   // ---- コメント追加まわりの状態 ----
   const [newComment, setNewComment] = useState("");
@@ -406,12 +413,12 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
   useEffect(() => {
     const dialog = imageLightboxDialogRef.current;
     if (!dialog) return;
-    if (enlargedImageUrl && !dialog.open) {
+    if (lightbox && !dialog.open) {
       dialog.showModal();
-    } else if (!enlargedImageUrl && dialog.open) {
+    } else if (!lightbox && dialog.open) {
       dialog.close();
     }
-  }, [enlargedImageUrl]);
+  }, [lightbox]);
 
   // ★追加：ギャラリー写真を1枚追加する
   const handleAddImage = async (e: React.SubmitEvent<HTMLFormElement>) => {
@@ -646,6 +653,15 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     setCurrentImageIndex((i) => (i + 1) % galleryImages.length);
   };
 
+  // ★追加(C36)：拡大表示中の写真を前後に切り替える(店舗写真が2枚以上のとき)
+  const stepLightbox = (delta: number) => {
+    if (!lightbox) return;
+    const count = lightbox.images.length;
+    const index = (lightbox.index + delta + count) % count;
+    setLightbox({ ...lightbox, index });
+    if (lightbox.fromStoreGallery) setCurrentImageIndex(index);
+  };
+
   // スマホでのスワイプ操作に対応する(左右にある程度の距離を動かしたら切り替える)
   const SWIPE_THRESHOLD_PX = 40;
   const handleImageTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
@@ -721,10 +737,24 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                 onTouchStart={handleImageTouchStart}
                 onTouchEnd={handleImageTouchEnd}
               >
-                <img
-                  src={galleryImages[safeImageIndex]}
-                  alt={`${store.title}の店舗写真 ${safeImageIndex + 1}枚目`}
-                />
+                {/* ★修正(C36)：写真を押すと拡大表示する(拡大中も前後の写真に切り替えられる) */}
+                <button
+                  type="button"
+                  className="store-image-carousel__open"
+                  onClick={() =>
+                    setLightbox({
+                      images: galleryImages,
+                      index: safeImageIndex,
+                      fromStoreGallery: true,
+                    })
+                  }
+                  aria-label="店舗写真を拡大表示"
+                >
+                  <img
+                    src={galleryImages[safeImageIndex]}
+                    alt={`${store.title}の店舗写真 ${safeImageIndex + 1}枚目`}
+                  />
+                </button>
 
                 {galleryImages.length > 1 && (
                   <>
@@ -889,7 +919,8 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
               </ul>
             )}
 
-            <form onSubmit={handleAddComment}>
+            {/* ★修正(C37)：上のコメント一覧とくっつかないよう、間隔を空ける */}
+            <form onSubmit={handleAddComment} className="store-comment-form">
               <label>
                 コメントを追加
                 <textarea
@@ -989,7 +1020,13 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                       <button
                         type="button"
                         className="menu-list__image-button"
-                        onClick={() => setEnlargedImageUrl(menu.image_url)}
+                        onClick={() =>
+                          setLightbox({
+                            images: [menu.image_url],
+                            index: 0,
+                            fromStoreGallery: false,
+                          })
+                        }
                         aria-label={`${menu.menu_name}の写真を拡大表示`}
                       >
                         <img src={menu.image_url} alt={menu.menu_name} />
@@ -1164,24 +1201,66 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
       </dialog>
 
       {/* ★追加：メニュー写真の拡大表示用ダイアログ */}
+      {/* ★修正(C36)：店舗写真にも使い、2枚以上なら矢印・←→キー・スワイプで切り替える */}
       <dialog
         ref={imageLightboxDialogRef}
         className="image-lightbox"
-        onClose={() => setEnlargedImageUrl(null)}
+        onClose={() => setLightbox(null)}
         onClick={(e) => {
           // 画像自体ではなく、背景部分をクリックした時だけ閉じる
           if (e.target === e.currentTarget) {
-            setEnlargedImageUrl(null);
+            setLightbox(null);
           }
         }}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowLeft") stepLightbox(-1);
+          if (e.key === "ArrowRight") stepLightbox(1);
+        }}
+        onTouchStart={(e) => {
+          lightboxTouchStartXRef.current = e.touches[0].clientX;
+        }}
+        onTouchEnd={(e) => {
+          if (lightboxTouchStartXRef.current === null) return;
+          const deltaX =
+            e.changedTouches[0].clientX - lightboxTouchStartXRef.current;
+          if (deltaX > SWIPE_THRESHOLD_PX) stepLightbox(-1);
+          else if (deltaX < -SWIPE_THRESHOLD_PX) stepLightbox(1);
+          lightboxTouchStartXRef.current = null;
+        }}
       >
-        {enlargedImageUrl && (
-          <img src={enlargedImageUrl} alt="拡大表示中の写真" />
+        {lightbox && (
+          <img
+            src={lightbox.images[lightbox.index]}
+            alt={`拡大表示中の写真 ${lightbox.index + 1}枚目`}
+          />
+        )}
+        {lightbox && lightbox.images.length > 1 && (
+          <>
+            <button
+              type="button"
+              className="image-lightbox__arrow image-lightbox__arrow--left"
+              onClick={() => stepLightbox(-1)}
+              aria-label="前の写真"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              className="image-lightbox__arrow image-lightbox__arrow--right"
+              onClick={() => stepLightbox(1)}
+              aria-label="次の写真"
+            >
+              ›
+            </button>
+            <div className="image-lightbox__indicator">
+              {lightbox.index + 1} / {lightbox.images.length}
+            </div>
+          </>
         )}
         <button
           type="button"
           className="image-lightbox__close"
-          onClick={() => setEnlargedImageUrl(null)}
+          onClick={() => setLightbox(null)}
           aria-label="拡大表示を閉じる"
         >
           ×

@@ -19,6 +19,8 @@ type Store = {
   meal_time: "lunch" | "dinner";
   // ★追加：夜(dinner)の店の予算帯表示に使う、申告額の平均
   price_per_person: number;
+  // ★追加(C38)：登録日(YYYYMMDD)。新着(NEW)の印に使う(古いAPIの応答には無い)
+  created_at?: string;
 };
 
 type LoadStatus = "loading" | "success" | "error";
@@ -26,6 +28,19 @@ type LoadStatus = "loading" | "success" | "error";
 const ALL_CATEGORIES = "";
 const ALL_MEAL_TIMES = "";
 const PAGE_SIZE = 8; // 縦2 × 横4 = 1ページ8件
+// ★追加(C38)：登録から何日以内を新着(NEW)とするか
+const NEW_STORE_DAYS = 7;
+
+// 登録日(YYYYMMDD)が、nowから NEW_STORE_DAYS 日以内かどうか
+function isNewStore(createdAt: string | undefined, now: number): boolean {
+  if (!createdAt || !/^\d{8}$/.test(createdAt)) return false;
+  const created = new Date(
+    Number(createdAt.slice(0, 4)),
+    Number(createdAt.slice(4, 6)) - 1,
+    Number(createdAt.slice(6, 8)),
+  ).getTime();
+  return now - created < NEW_STORE_DAYS * 24 * 60 * 60 * 1000;
+}
 
 // meal_timeの値を、画面表示用の日本語に変換する
 const MEAL_TIME_LABELS: Record<string, string> = {
@@ -60,6 +75,12 @@ export function HomePage({
   // ★追加：昼/晩の絞り込み用State。カテゴリーとは別軸の絞り込み
   const [mealTimeFilter, setMealTimeFilter] = useState<string>(ALL_MEAL_TIMES);
   const [currentPage, setCurrentPage] = useState(1);
+  // ★追加(C39)：店名のキーワード検索
+  const [keyword, setKeyword] = useState("");
+  // ★追加(C40)：「今日どこ行く？」で選ばれた店舗
+  const [pickedStore, setPickedStore] = useState<Store | null>(null);
+  // 新着判定の基準時刻(画面を開いた時点。描画のたびに変わらないよう固定する)
+  const [now] = useState(() => Date.now());
 
   // ★追加：店舗一覧の読み込み状態。失敗時に「0件」と区別できるようにする
   const [loadStatus, setLoadStatus] = useState<LoadStatus>("loading");
@@ -119,9 +140,13 @@ export function HomePage({
         store.store_category_name === categoryFilter;
       const matchesMealTime =
         mealTimeFilter === ALL_MEAL_TIMES || store.meal_time === mealTimeFilter;
-      return matchesCategory && matchesMealTime;
+      // ★追加(C39)：店名にキーワードが含まれるか(前後の空白は無視、英字の大小は区別しない)
+      const matchesKeyword = store.title
+        .toLowerCase()
+        .includes(keyword.trim().toLowerCase());
+      return matchesCategory && matchesMealTime && matchesKeyword;
     });
-  }, [stores, categoryFilter, mealTimeFilter]);
+  }, [stores, categoryFilter, mealTimeFilter, keyword]);
 
 
   const totalPages = Math.max(1, Math.ceil(filteredStores.length / PAGE_SIZE));
@@ -146,6 +171,23 @@ export function HomePage({
     setMealTimeFilter(e.target.value);
     // ★修正：絞り込み条件が変わったら1ページ目に戻す(以前はeffectで行っていた)
     setCurrentPage(1);
+  };
+
+  // ★追加(C39)
+  const handleKeywordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setKeyword(e.target.value);
+    setCurrentPage(1);
+  };
+
+  // ★追加(C40)：絞り込み・検索の条件に合う店舗から1店をランダムに選ぶ。
+  // 2店以上あるときは、直前に選ばれた店が続けて出ないようにする
+  const handlePickRandomStore = () => {
+    const candidates =
+      filteredStores.length > 1 && pickedStore
+        ? filteredStores.filter((s) => s.place_id !== pickedStore.place_id)
+        : filteredStores;
+    if (candidates.length === 0) return;
+    setPickedStore(candidates[Math.floor(Math.random() * candidates.length)]);
   };
 
   const goToPrevPage = () => {
@@ -180,6 +222,17 @@ export function HomePage({
       <main className="home-main">
         {/* ★修正(C33)：2つの絞り込みを横に並べ、1つあたりの幅を抑える(狭い画面では縦に並ぶ) */}
         <div className="home-filters">
+          {/* ★追加(C39)：店名のキーワード検索 */}
+          <label>
+            店名で検索
+            <input
+              type="search"
+              value={keyword}
+              onChange={handleKeywordChange}
+              placeholder="例：ラーメン"
+            />
+          </label>
+
           {/* カテゴリー絞り込み */}
           <label>
             カテゴリーで絞り込み
@@ -203,6 +256,37 @@ export function HomePage({
             </select>
           </label>
         </div>
+
+        {/* ★追加(C40)：「今日どこ行く？」。今の絞り込み・検索の条件から1店を提案する */}
+        {loadStatus === "success" && stores.length > 0 && (
+          <div className="home-random">
+            <button
+              type="button"
+              className="home-random__button"
+              onClick={handlePickRandomStore}
+              disabled={filteredStores.length === 0}
+            >
+              {pickedStore ? "もう一回選ぶ" : "今日どこ行く？"}
+            </button>
+            {pickedStore && (
+              <div className="home-random__result" role="status">
+                <span className="home-random__lead">今日はここ！</span>
+                <span className="home-random__name">{pickedStore.title}</span>
+                <span className="home-random__meta">
+                  {pickedStore.store_category_name}・
+                  {MEAL_TIME_LABELS[pickedStore.meal_time] ?? pickedStore.meal_time}・
+                  {formatBudgetBand(getBudgetSourcePrice(pickedStore))}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onNavigate("store-detail", pickedStore.place_id)}
+                >
+                  この店を見る
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ★追加：読み込み中・エラー・0件の表示 */}
         {loadStatus === "loading" && <p>読み込み中...</p>}
@@ -232,22 +316,32 @@ export function HomePage({
                 className="store-card__link"
                 onClick={() => onNavigate("store-detail", store.place_id)}
               >
-                {store.image_url ? (
-                  <img
-                    className="store-card__image"
-                    src={store.image_url}
-                    alt={store.title}
-                  />
-                ) : (
-                  <span className="store-card__placeholder">写真なし</span>
-                )}
+                {/* ★追加(C38)：登録から7日以内の店に「NEW」の印を付ける */}
+                <span className="store-card__media">
+                  {store.image_url ? (
+                    <img
+                      className="store-card__image"
+                      src={store.image_url}
+                      alt={store.title}
+                    />
+                  ) : (
+                    <span className="store-card__placeholder">写真なし</span>
+                  )}
+                  {isNewStore(store.created_at, now) && (
+                    <span className="store-card__new">NEW</span>
+                  )}
+                </span>
 
                 <span className="store-card__body">
                   <span className="store-card__name">{store.title}</span>
                   <span className="store-card__category">
                     {store.store_category_name}
-                    {/* ★追加：カテゴリーの隣に昼/晩も分かるように表示 */}・
-                    {MEAL_TIME_LABELS[store.meal_time] ?? store.meal_time}
+                    {/* ★修正(C38)：昼/晩を色分けしたラベルにする */}
+                    <span
+                      className={`store-card__meal store-card__meal--${store.meal_time}`}
+                    >
+                      {MEAL_TIME_LABELS[store.meal_time] ?? store.meal_time}
+                    </span>
                   </span>
                   <span className="store-card__price">
                     {formatBudgetBand(getBudgetSourcePrice(store))}
