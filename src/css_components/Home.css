@@ -78,7 +78,8 @@
 }
 
 .store-card__category,
-.store-card__price {
+.store-card__price,
+.store-card__walk {
   font-size: 13px;
   color: rgba(42, 23, 16, 0.75);
 }

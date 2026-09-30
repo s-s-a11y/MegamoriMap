@@ -3,6 +3,7 @@ import { formatBudgetBand, getBudgetSourcePrice } from "../utils/FormatPrice"; /
 import "../css_components/Home.css";
 import { UserNameForm } from "./UserNameForm";
 import { API_BASE_URL, readErrorMessage } from "../utils/api";
+import { formatWalk } from "../utils/format";
 
 // 店舗情報格納用typeの定義
 type Store = {
@@ -21,7 +22,26 @@ type Store = {
   price_per_person: number;
   // ★追加(C38)：登録日(YYYYMMDD)。新着(NEW)の印に使う(古いAPIの応答には無い)
   created_at?: string;
+  // ★追加(C41)：会社からの徒歩時間(分)と距離(m)。計算できなければnull(古いAPIの応答には無い)
+  walk_minutes?: number | null;
+  walk_distance_m?: number | null;
 };
+
+// ★追加(C41)：並び替えの種類
+type SortOrder = "new" | "near" | "cheap";
+const SORT_LABELS: Record<SortOrder, string> = {
+  new: "新着順",
+  near: "会社から近い順",
+  cheap: "安い順",
+};
+
+// 値が無い(null・0)店を、並び替えで常に最後に回すための比較
+function compareWithMissingLast(a: number | null, b: number | null): number {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return a - b;
+}
 
 type LoadStatus = "loading" | "success" | "error";
 
@@ -77,6 +97,8 @@ export function HomePage({
   const [currentPage, setCurrentPage] = useState(1);
   // ★追加(C39)：店名のキーワード検索
   const [keyword, setKeyword] = useState("");
+  // ★追加(C41)：並び替え(既定は新着順)
+  const [sortOrder, setSortOrder] = useState<SortOrder>("new");
   // ★追加(C40)：「今日どこ行く？」で選ばれた店舗
   const [pickedStore, setPickedStore] = useState<Store | null>(null);
   // 新着判定の基準時刻(画面を開いた時点。描画のたびに変わらないよう固定する)
@@ -148,13 +170,33 @@ export function HomePage({
     });
   }, [stores, categoryFilter, mealTimeFilter, keyword]);
 
+  // ★追加(C41)：絞り込んだ店舗を、選ばれた順に並べる(元の配列は変えない)。
+  // 近い順は徒歩時間(同じ分なら距離)、安い順は予算帯と同じ基準の金額で比べ、
+  // 値が無い店は最後に回す
+  const sortedStores = useMemo(() => {
+    const list = [...filteredStores];
+    if (sortOrder === "new") {
+      list.sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+    } else if (sortOrder === "near") {
+      list.sort(
+        (a, b) =>
+          compareWithMissingLast(a.walk_minutes ?? null, b.walk_minutes ?? null) ||
+          compareWithMissingLast(a.walk_distance_m ?? null, b.walk_distance_m ?? null),
+      );
+    } else {
+      const price = (store: Store) => getBudgetSourcePrice(store) || null;
+      list.sort((a, b) => compareWithMissingLast(price(a), price(b)));
+    }
+    return list;
+  }, [filteredStores, sortOrder]);
+
 
   const totalPages = Math.max(1, Math.ceil(filteredStores.length / PAGE_SIZE));
 
   const pagedStores = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredStores.slice(start, start + PAGE_SIZE);
-  }, [filteredStores, currentPage]);
+    return sortedStores.slice(start, start + PAGE_SIZE);
+  }, [sortedStores, currentPage]);
 
   const handleCategoryFilterChange = (
     e: React.ChangeEvent<HTMLSelectElement>,
@@ -170,6 +212,12 @@ export function HomePage({
   ) => {
     setMealTimeFilter(e.target.value);
     // ★修正：絞り込み条件が変わったら1ページ目に戻す(以前はeffectで行っていた)
+    setCurrentPage(1);
+  };
+
+  // ★追加(C41)
+  const handleSortOrderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSortOrder(e.target.value as SortOrder);
     setCurrentPage(1);
   };
 
@@ -253,6 +301,18 @@ export function HomePage({
               <option value={ALL_MEAL_TIMES}>すべて</option>
               <option value="lunch">昼</option>
               <option value="dinner">晩</option>
+            </select>
+          </label>
+
+          {/* ★追加(C41)：並び替え */}
+          <label>
+            並び替え
+            <select value={sortOrder} onChange={handleSortOrderChange}>
+              {(Object.keys(SORT_LABELS) as SortOrder[]).map((key) => (
+                <option key={key} value={key}>
+                  {SORT_LABELS[key]}
+                </option>
+              ))}
             </select>
           </label>
         </div>
@@ -346,6 +406,12 @@ export function HomePage({
                   <span className="store-card__price">
                     {formatBudgetBand(getBudgetSourcePrice(store))}
                   </span>
+                  {/* ★追加(C41)：会社からの徒歩時間(店舗詳細と同じ表示) */}
+                  {formatWalk(store.walk_minutes, store.walk_distance_m) && (
+                    <span className="store-card__walk">
+                      会社から{formatWalk(store.walk_minutes, store.walk_distance_m)}
+                    </span>
+                  )}
                 </span>
               </button>
             </li>

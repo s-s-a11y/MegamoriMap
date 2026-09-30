@@ -90,9 +90,9 @@ function installFakeApi(s: Scenario) {
   const nameOf = (id: string) => (id === ME ? userName : names[id] ?? "");
 
   const stores = [
-    { place_id: PREVIEW_PLACE_ID, title: "プレビュー食堂 池袋本店", avg_price: 1200, address_label: "東京都豊島区西池袋1-1-1", store_url: "https://example.com", longitude: 139.7109, latitude: 35.7295, store_category_name: "定食", image_url: fakePhoto("表紙", "#b23913"), meal_time: "lunch", price_per_person: 0, created_at: daysAgo(2) },
-    { place_id: "preview-place-2", title: "プレビュー酒場", avg_price: 0, address_label: "東京都豊島区東池袋1-1-1", store_url: "", longitude: 139.713, latitude: 35.73, store_category_name: "居酒屋", image_url: "", meal_time: "dinner", price_per_person: 3500, created_at: daysAgo(30) },
-    { place_id: "preview-place-3", title: "プレビューらーめん", avg_price: 950, address_label: "東京都豊島区南池袋1-1-1", store_url: "", longitude: 139.711, latitude: 35.728, store_category_name: "ラーメン", image_url: fakePhoto("らーめん", "#46684a"), meal_time: "lunch", price_per_person: 0, created_at: daysAgo(10) },
+    { place_id: PREVIEW_PLACE_ID, title: "プレビュー食堂 池袋本店", avg_price: 1200, address_label: "東京都豊島区西池袋1-1-1", store_url: "https://example.com", longitude: 139.7109, latitude: 35.7295, store_category_name: "定食", image_url: fakePhoto("表紙", "#b23913"), meal_time: "lunch", price_per_person: 0, created_at: daysAgo(2), walk_minutes: 11, walk_distance_m: 650 },
+    { place_id: "preview-place-2", title: "プレビュー酒場", avg_price: 0, address_label: "東京都豊島区東池袋1-1-1", store_url: "", longitude: 139.713, latitude: 35.73, store_category_name: "居酒屋", image_url: "", meal_time: "dinner", price_per_person: 3500, created_at: daysAgo(30), walk_minutes: 4, walk_distance_m: 280 },
+    { place_id: "preview-place-3", title: "プレビューらーめん", avg_price: 950, address_label: "東京都豊島区南池袋1-1-1", store_url: "", longitude: 139.711, latitude: 35.728, store_category_name: "ラーメン", image_url: fakePhoto("らーめん", "#46684a"), meal_time: "lunch", price_per_person: 0, created_at: daysAgo(10), walk_minutes: null, walk_distance_m: null },
   ];
 
   const json = (body: unknown, status = 200) =>
