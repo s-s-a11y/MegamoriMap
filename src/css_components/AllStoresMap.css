@@ -1,0 +1,106 @@
+/*
+  AllStoresMap.tsx 専用のスタイル(★新規 C44 全店舗の地図モーダル)。
+*/
+
+/* App.css の dialog 共通指定(幅360px・余白24px)を、地図用に広げる */
+.all-stores-map {
+  width: min(960px, 94vw);
+  max-width: none;
+  height: min(720px, 85vh);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* dialog は閉じている間 display:none にしておく(上の display:flex で常に表示されないように) */
+.all-stores-map:not([open]) {
+  display: none;
+}
+
+.all-stores-map__header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.all-stores-map__header h2 {
+  margin: 0;
+  padding: 0;
+  border: none;
+  font-size: 18px;
+}
+
+.all-stores-map__legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.all-stores-map__dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-left: 8px;
+  border-radius: 50%;
+}
+
+.all-stores-map__dot--lunch {
+  background: #e8a33d;
+}
+
+.all-stores-map__dot--dinner {
+  background: #241511;
+}
+
+/* 閉じるボタン：丸の中に×を中央寄せ(App.css の button 共通の余白を打ち消す) */
+.all-stores-map__close {
+  margin-left: auto;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.all-stores-map__map {
+  flex: 1;
+  min-height: 0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.all-stores-map__hint {
+  margin: 0;
+  max-width: none; /* App.css の p 共通の幅制限を外し、中央に置く */
+  font-size: 12px;
+  text-align: center;
+  color: rgba(42, 23, 16, 0.65);
+}
+
+/* マーカーの吹き出し */
+.all-stores-map__popup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-ui);
+  color: var(--ink);
+  text-align: center;
+}
+
+.all-stores-map__popup span {
+  font-size: 12px;
+  color: rgba(42, 23, 16, 0.75);
+}
+
+.all-stores-map__popup button {
+  margin-top: 4px;
+  padding: 6px 14px;
+  font-size: 13px;
+}

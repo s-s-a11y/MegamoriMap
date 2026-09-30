@@ -1,9 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { formatBudgetBand, getBudgetSourcePrice } from "../utils/FormatPrice"; // 実際の配置場所に合わせてパスを調整してください
 import "../css_components/Home.css";
 import { UserNameForm } from "./UserNameForm";
 import { API_BASE_URL, readErrorMessage } from "../utils/api";
 import { formatWalk } from "../utils/format";
+
+// ★追加(C44)：全店舗の地図(モーダル)。地図ライブラリは大きいため、ボタンを押したときだけ読み込む
+// (トップ画面の表示を遅くしないため。以前トップに地図を置いて遅くなった経緯がある)
+const AllStoresMap = lazy(() =>
+  import("./AllStoresMap").then((module) => ({ default: module.AllStoresMap })),
+);
 
 // 店舗情報格納用typeの定義
 type Store = {
@@ -97,6 +103,14 @@ export function HomePage({
   const [currentPage, setCurrentPage] = useState(1);
   // ★追加(C39)：店名のキーワード検索
   const [keyword, setKeyword] = useState("");
+  // ★追加(C44)：全店舗の地図を開いているか
+  const [isMapOpen, setIsMapOpen] = useState(false);
+  // 地図の吹き出しの「詳細を見る」から店舗詳細へ移る(地図を作り直さないよう関数を固定する)
+  const handleSelectFromMap = useCallback(
+    (placeId: string) => onNavigate("store-detail", placeId),
+    [onNavigate],
+  );
+  const handleCloseMap = useCallback(() => setIsMapOpen(false), []);
   // ★追加(C41)：並び替え(既定は新着順)
   const [sortOrder, setSortOrder] = useState<SortOrder>("new");
   // 新着判定の基準時刻(画面を開いた時点。描画のたびに変わらないよう固定する)
@@ -313,7 +327,26 @@ export function HomePage({
           >
             行ってみたい店を探す
           </button>
+          {/* ★追加(C44)：全店舗の地図をモーダルで開く */}
+          <button
+            type="button"
+            className="home-wishlist__button"
+            onClick={() => setIsMapOpen(true)}
+            disabled={loadStatus !== "success" || stores.length === 0}
+          >
+            全店舗を地図で見る
+          </button>
         </div>
+
+        {isMapOpen && (
+          <Suspense fallback={<p>地図を読み込み中...</p>}>
+            <AllStoresMap
+              stores={stores}
+              onSelect={handleSelectFromMap}
+              onClose={handleCloseMap}
+            />
+          </Suspense>
+        )}
 
         {/* ★追加：読み込み中・エラー・0件の表示 */}
         {loadStatus === "loading" && <p>読み込み中...</p>}
