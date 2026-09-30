@@ -75,7 +75,7 @@ const DEFAULT_ORIGIN = { longitude: 139.7109, latitude: 35.7295 };
 // App.tsx から画面切り替え関数を受け取るためのprops
 interface HomePageProps {
   onNavigate: (
-    view: "map" | "regist-store" | "regist-menu" | "store-detail",
+    view: "map" | "regist-store" | "regist-menu" | "store-detail" | "wishlist",
     placeId?: string,
     storeName?: string,
   ) => void;
@@ -99,8 +99,6 @@ export function HomePage({
   const [keyword, setKeyword] = useState("");
   // ★追加(C41)：並び替え(既定は新着順)
   const [sortOrder, setSortOrder] = useState<SortOrder>("new");
-  // ★追加(C40)：「今日どこ行く？」で選ばれた店舗
-  const [pickedStore, setPickedStore] = useState<Store | null>(null);
   // 新着判定の基準時刻(画面を開いた時点。描画のたびに変わらないよう固定する)
   const [now] = useState(() => Date.now());
 
@@ -227,17 +225,6 @@ export function HomePage({
     setCurrentPage(1);
   };
 
-  // ★追加(C40)：絞り込み・検索の条件に合う店舗から1店をランダムに選ぶ。
-  // 2店以上あるときは、直前に選ばれた店が続けて出ないようにする
-  const handlePickRandomStore = () => {
-    const candidates =
-      filteredStores.length > 1 && pickedStore
-        ? filteredStores.filter((s) => s.place_id !== pickedStore.place_id)
-        : filteredStores;
-    if (candidates.length === 0) return;
-    setPickedStore(candidates[Math.floor(Math.random() * candidates.length)]);
-  };
-
   const goToPrevPage = () => {
     setCurrentPage((page) => Math.max(1, page - 1));
   };
@@ -317,36 +304,16 @@ export function HomePage({
           </label>
         </div>
 
-        {/* ★追加(C40)：「今日どこ行く？」。今の絞り込み・検索の条件から1店を提案する */}
-        {loadStatus === "success" && stores.length > 0 && (
-          <div className="home-random">
-            <button
-              type="button"
-              className="home-random__button"
-              onClick={handlePickRandomStore}
-              disabled={filteredStores.length === 0}
-            >
-              {pickedStore ? "もう一回選ぶ" : "今日どこ行く？"}
-            </button>
-            {pickedStore && (
-              <div className="home-random__result" role="status">
-                <span className="home-random__lead">今日はここ！</span>
-                <span className="home-random__name">{pickedStore.title}</span>
-                <span className="home-random__meta">
-                  {pickedStore.store_category_name}・
-                  {MEAL_TIME_LABELS[pickedStore.meal_time] ?? pickedStore.meal_time}・
-                  {formatBudgetBand(getBudgetSourcePrice(pickedStore))}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => onNavigate("store-detail", pickedStore.place_id)}
-                >
-                  この店を見る
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+        {/* ★修正(機能追加#4)：「今日どこ行く？」(C40)を廃止し、行ってみたい店リストへの入口にする */}
+        <div className="home-wishlist">
+          <button
+            type="button"
+            className="home-wishlist__button"
+            onClick={() => onNavigate("wishlist")}
+          >
+            行ってみたい店を探す
+          </button>
+        </div>
 
         {/* ★追加：読み込み中・エラー・0件の表示 */}
         {loadStatus === "loading" && <p>読み込み中...</p>}

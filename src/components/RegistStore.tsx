@@ -25,6 +25,11 @@ type Status = "idle" | "loading" | "success" | "error";
 
 // App.tsx から画面切り替え関数を受け取るためのprops
 interface RegisterStorePageProps {
+  // ★追加(機能追加#4)：行ってみたい店リストから来たときに、最初から選んでおく店と昼/晩
+  preset?: {
+    place: SearchResult;
+    mealTime: "lunch" | "dinner";
+  } | null;
   onNavigate: (
     view: "map" | "regist-store" | "regist-menu",
     placeId?: string,
@@ -36,7 +41,10 @@ interface RegisterStorePageProps {
 const FALLBACK_SEARCH_ORIGIN = { longitude: 139.7109, latitude: 35.7295 };
 
 // 店舗登録用ページ
-export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
+export function RegisterStorePage({
+  onNavigate,
+  preset = null,
+}: RegisterStorePageProps) {
   // ★追加：書き込み系のAPI呼び出しに使うIDトークンを取得する
   const auth = useAuth();
 
@@ -72,15 +80,22 @@ export function RegisterStorePage({ onNavigate }: RegisterStorePageProps) {
   const [keyword, setKeyword] = useState("");
   const [searchStatus, setSearchStatus] = useState<Status>("idle");
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [results, setResults] = useState<SearchResult[]>([]);
+  // ★修正(機能追加#4)：行ってみたい店から来たときは、その店を検索結果として最初から表示・選択しておく
+  const [results, setResults] = useState<SearchResult[]>(
+    preset ? [preset.place] : [],
+  );
 
   // ---- 選択・登録まわりの状態 ----
-  const [selected, setSelected] = useState<SearchResult | null>(null);
+  const [selected, setSelected] = useState<SearchResult | null>(
+    preset?.place ?? null,
+  );
   const [registStatus, setRegistStatus] = useState<Status>("idle");
   const [registError, setRegistError] = useState<string | null>(null);
   const [category, setCategory] = useState<string>("");
   // ★追加：昼/晩(居酒屋対応)
-  const [mealTime, setMealTime] = useState<"lunch" | "dinner" | "">("");
+  const [mealTime, setMealTime] = useState<"lunch" | "dinner" | "">(
+    preset?.mealTime ?? "",
+  );
   // ★追加：夜(dinner)の店で使う、登録者自身が使った金額(任意)
   const [pricePerPerson, setPricePerPerson] = useState("");
 

@@ -95,6 +95,19 @@ function installFakeApi(s: Scenario) {
     { place_id: "preview-place-3", title: "プレビューらーめん", avg_price: 950, address_label: "東京都豊島区南池袋1-1-1", store_url: "", longitude: 139.711, latitude: 35.728, store_category_name: "ラーメン", image_url: fakePhoto("らーめん", "#46684a"), meal_time: "lunch", price_per_person: 0, created_at: daysAgo(10), walk_minutes: null, walk_distance_m: null },
   ];
 
+  // ★追加(機能追加#4)：行ってみたい店リストの作り物(候補と、画面を開いている間だけ保持するリスト)
+  const candidatePool = [
+    { place_id: "cand-1", title: "候補食堂 西池袋店", address_label: "東京都豊島区西池袋2-1-1", category_name: "カジュアルダイニング", longitude: 139.708, latitude: 35.732, walk_minutes: 3, walk_distance_m: 220 },
+    { place_id: "cand-2", title: "候補らーめん", address_label: "東京都豊島区池袋2-2-2", category_name: "レストラン", longitude: 139.709, latitude: 35.735, walk_minutes: 5, walk_distance_m: 380 },
+    { place_id: "cand-3", title: "候補カレー", address_label: "東京都豊島区池袋2-3-3", category_name: "カジュアルダイニング", longitude: 139.707, latitude: 35.736, walk_minutes: 7, walk_distance_m: 540 },
+    { place_id: "cand-4", title: "候補定食屋", address_label: "東京都豊島区西池袋3-4-4", category_name: "レストラン", longitude: 139.705, latitude: 35.731, walk_minutes: 8, walk_distance_m: 610 },
+    { place_id: "cand-5", title: "候補とんかつ", address_label: "東京都豊島区池袋1-5-5", category_name: "レストラン", longitude: 139.711, latitude: 35.737, walk_minutes: 10, walk_distance_m: 760 },
+  ];
+  let wishlist = [
+    { place_id: PREVIEW_PLACE_ID, title: "プレビュー食堂 池袋本店", address_label: "東京都豊島区西池袋1-1-1", category_name: "レストラン", meal_time: "lunch", longitude: 139.7109, latitude: 35.7295, created_at: "20260929120000", registered: true, walk_minutes: null, walk_distance_m: null },
+    { place_id: "wish-1", title: "気になる居酒屋", address_label: "東京都豊島区池袋2-9-9", category_name: "バー、パブ、居酒屋", meal_time: "dinner", longitude: 139.71, latitude: 35.734, created_at: "20260930090000", registered: false, walk_minutes: 6, walk_distance_m: 450 },
+  ];
+
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
@@ -113,6 +126,18 @@ function installFakeApi(s: Scenario) {
         return json({ user_name: userName });
       case "/map":
         return json({ stores });
+      case "/wishlist/candidates":
+        return json({ candidates: candidatePool.filter((c) => !wishlist.some((w) => w.place_id === c.place_id)) });
+      case "/wishlist/list":
+        return json({ items: wishlist });
+      case "/wishlist/add": {
+        const c = candidatePool.find((x) => x.place_id === body.place_id);
+        if (c) wishlist = [{ ...c, meal_time: body.meal_time, created_at: daysAgo(0) + "999999", registered: false }, ...wishlist];
+        return json({ message: "Added to wishlist" });
+      }
+      case "/wishlist/delete":
+        wishlist = wishlist.filter((w) => w.place_id !== body.place_id);
+        return json({ message: "Deleted from wishlist" });
       case "/categories/stores":
         return json({ categories: ["定食", "居酒屋", "ラーメン"] });
       case "/stores/detail":

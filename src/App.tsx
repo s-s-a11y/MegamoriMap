@@ -5,6 +5,7 @@ import { Header } from "./components/Header";
 import { HomePage } from "./components/Home";
 import { RegisterStorePage } from "./components/RegistStore";
 import { RegisterMenuPage } from "./components/RegistMenu";
+import { WishlistPage, type WishlistRegistPreset } from "./components/Wishlist";
 import { useMyUser } from "./utils/useMyUser";
 
 // ★修正：店舗詳細画面は地図ライブラリ(maplibre-gl)を含み、JS全体の大半を占めるため、
@@ -16,7 +17,13 @@ const StoreDetailPage = lazy(() =>
 );
 
 // 表示する画面の種類。
-export type ViewName = "map" | "regist-store" | "regist-menu" | "store-detail";
+// ★追加(機能追加#4)："wishlist"(行ってみたい店リスト)
+export type ViewName =
+  | "map"
+  | "regist-store"
+  | "regist-menu"
+  | "store-detail"
+  | "wishlist";
 
 // ★追加：最初に表示する画面を指定する(確認モード src/dev/preview.tsx 用)。
 // 通常の起動では指定しないので、今までどおりHome画面から始まる。
@@ -40,6 +47,10 @@ function App({ initialView = "map", initialPlaceId = null }: AppProps) {
   const [selectedStoreName, setSelectedStoreName] = useState<string | null>(
     null,
   );
+  // ★追加(機能追加#4)：行ってみたい店リストから店舗登録へ進むときに引き継ぐ店の情報
+  const [registPreset, setRegistPreset] = useState<WishlistRegistPreset | null>(
+    null,
+  );
 
   // 画面遷移用の関数。store-detail/regist-menuへ遷移する場合は
   // 第2引数にplace_id、第3引数に店舗名を渡すことで、どの店舗を扱うか伝える。
@@ -54,7 +65,15 @@ function App({ initialView = "map", initialPlaceId = null }: AppProps) {
     if (storeName) {
       setSelectedStoreName(storeName);
     }
+    // 通常の遷移では店舗登録画面に何も引き継がない
+    setRegistPreset(null);
     setCurrentView(view);
+  };
+
+  // ★追加(機能追加#4)：行ってみたい店リストの店を、店舗登録画面に入れた状態で開く
+  const handleRegistFromWishlist = (preset: WishlistRegistPreset) => {
+    setRegistPreset(preset);
+    setCurrentView("regist-store");
   };
 
   // 描画するコンポーネントを決定する処理
@@ -69,7 +88,21 @@ function App({ initialView = "map", initialPlaceId = null }: AppProps) {
           />
         );
       case "regist-store":
-        return <RegisterStorePage onNavigate={handleNavigate} />;
+        return (
+          <RegisterStorePage
+            // 引き継ぐ店が変わったら画面を作り直し、入力状態を初期化する
+            key={registPreset?.place.PlaceId ?? "new"}
+            onNavigate={handleNavigate}
+            preset={registPreset}
+          />
+        );
+      case "wishlist":
+        return (
+          <WishlistPage
+            onNavigate={handleNavigate}
+            onRegistStore={handleRegistFromWishlist}
+          />
+        );
       case "regist-menu":
         // 通常は店舗詳細画面から必ずplaceId付きで遷移してくるが、
         // 型上はnullの可能性があるため、その場合はHomeに戻す安全策を入れておく
@@ -108,6 +141,7 @@ function App({ initialView = "map", initialPlaceId = null }: AppProps) {
         }
         userName={userName}
         onSaveUserName={saveUserName}
+        onOpenWishlist={() => handleNavigate("wishlist")}
       />
       <div className="content-area">
         <Suspense fallback={<p>読み込み中...</p>}>{renderView()}</Suspense>

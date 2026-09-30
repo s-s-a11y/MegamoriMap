@@ -198,46 +198,15 @@
   background: var(--charcoal);
 }
 
-/* ---- ★追加(C40)：「今日どこ行く？」 ---- */
-.home-random {
+/* ---- ★修正(機能追加#4)：「今日どこ行く？」を廃止し、行ってみたい店リストへの入口ボタンに ---- */
+.home-wishlist {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
+  justify-content: center;
   margin: 8px 0 24px;
 }
 
-.home-random__button {
+.home-wishlist__button {
   padding: 12px 32px;
   font-size: 17px;
   border-radius: 24px;
-}
-
-.home-random__result {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  width: min(100%, 24em);
-  padding: 16px;
-  border: 2px solid var(--turmeric);
-  border-radius: 8px;
-  background: var(--paper-soft);
-  color: var(--ink); /* App.css の [role="status"] の緑色を打ち消す */
-}
-
-.home-random__lead {
-  font-size: 13px;
-  color: var(--persimmon-dark);
-  font-weight: 700;
-}
-
-.home-random__name {
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.home-random__meta {
-  font-size: 13px;
-  color: rgba(42, 23, 16, 0.75);
 }

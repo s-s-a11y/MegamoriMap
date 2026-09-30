@@ -9,6 +9,8 @@ interface HeaderProps {
   // ★追加(機能追加#1)：ログイン中の利用者のユーザー名(null=未ログイン・取得中、""=未設定)
   userName?: string | null;
   onSaveUserName?: (name: string) => Promise<void>;
+  // ★追加(機能追加#4)：「≡」メニューから行ってみたい店リストを開く
+  onOpenWishlist?: () => void;
 }
 
 // Cognitoは標準的なOIDCの「ログアウトエンドポイント」を持たないため、
@@ -29,6 +31,7 @@ export function Header({
   onGoHome,
   userName = null,
   onSaveUserName,
+  onOpenWishlist,
 }: HeaderProps) {
   const auth = useAuth();
   // ★追加(機能追加#1)：ユーザー名の変更フォームを開いているか
@@ -113,6 +116,17 @@ export function Header({
                   {/* ユーザー名が未設定のときは、Home画面の案内から設定してもらう */}
                   {userName && (
                     <p className="app-header__menu-user">{userName} さん</p>
+                  )}
+                  {onOpenWishlist && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        onOpenWishlist();
+                      }}
+                    >
+                      行ってみたい店
+                    </button>
                   )}
                   {userName && onSaveUserName && (
                     <button

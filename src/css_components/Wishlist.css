@@ -1,0 +1,124 @@
+/*
+  Wishlist.tsx 専用のスタイル(★新規 機能追加#4 行ってみたい店リスト)。
+*/
+
+.wishlist {
+  max-width: none;
+}
+
+.wishlist__section {
+  margin-bottom: 32px;
+}
+
+.wishlist__section h3 {
+  text-align: center;
+}
+
+/* 昼/晩の切り替えと「候補を探す」を横に並べる(狭い画面では折り返す) */
+.wishlist__search {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.wishlist__meal {
+  display: flex;
+  border: 1px solid var(--persimmon);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+/* 選ばれていない方は白地に柿色の文字、選ばれた方は柿色の塗り */
+.wishlist__meal-option {
+  border-radius: 0;
+  padding: 8px 24px;
+  color: var(--persimmon-dark);
+  background: var(--paper-soft);
+}
+
+.wishlist__meal-option.is-selected,
+.wishlist__meal-option.is-selected:hover:not(:disabled) {
+  color: var(--paper-soft);
+  background: var(--persimmon);
+}
+
+.wishlist__meal-option:hover:not(:disabled):not(.is-selected) {
+  background: var(--paper);
+}
+
+.wishlist__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.wishlist__card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+}
+
+.wishlist__card button {
+  margin-top: 4px;
+}
+
+.wishlist__name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.wishlist__meta {
+  font-size: 13px;
+  color: rgba(42, 23, 16, 0.75);
+}
+
+.wishlist__walk {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--persimmon-dark);
+}
+
+.wishlist__registered {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--moss);
+}
+
+/* 昼/晩のラベル(Home の店舗カードと同じ色分け) */
+.wishlist__label {
+  padding: 0 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--paper-soft);
+}
+
+.wishlist__label--lunch {
+  background: var(--turmeric);
+  color: var(--ink);
+}
+
+.wishlist__label--dinner {
+  background: var(--charcoal);
+}
+
+/* 「リストから外す」は控えめな赤枠(削除ボタンと同じ考え方) */
+.wishlist__remove {
+  color: var(--brick);
+  background: var(--paper-soft);
+  border: 1px solid var(--brick);
+}
+
+.wishlist__remove:hover:not(:disabled) {
+  color: var(--paper-soft);
+  background: var(--brick);
+}
