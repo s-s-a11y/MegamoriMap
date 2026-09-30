@@ -6,6 +6,8 @@ import { HomePage } from "./components/Home";
 import { RegisterStorePage } from "./components/RegistStore";
 import { RegisterMenuPage } from "./components/RegistMenu";
 import { WishlistPage, type WishlistRegistPreset } from "./components/Wishlist";
+import { MyPage } from "./components/MyPage";
+import { AdminPage } from "./components/AdminPage";
 import { useMyUser } from "./utils/useMyUser";
 
 // ★修正：店舗詳細画面は地図ライブラリ(maplibre-gl)を含み、JS全体の大半を占めるため、
@@ -23,7 +25,10 @@ export type ViewName =
   | "regist-store"
   | "regist-menu"
   | "store-detail"
-  | "wishlist";
+  | "wishlist"
+  // ★追加(C50・C51)：マイページ・管理者ページ
+  | "mypage"
+  | "admin";
 
 // ★追加：最初に表示する画面を指定する(確認モード src/dev/preview.tsx 用)。
 // 通常の起動では指定しないので、今までどおりHome画面から始まる。
@@ -96,6 +101,10 @@ function App({ initialView = "map", initialPlaceId = null }: AppProps) {
             preset={registPreset}
           />
         );
+      case "mypage":
+        return <MyPage userName={userName} onNavigate={handleNavigate} />;
+      case "admin":
+        return <AdminPage />;
       case "wishlist":
         return (
           <WishlistPage
@@ -142,6 +151,8 @@ function App({ initialView = "map", initialPlaceId = null }: AppProps) {
         userName={userName}
         onSaveUserName={saveUserName}
         onOpenWishlist={() => handleNavigate("wishlist")}
+        onOpenMyPage={() => handleNavigate("mypage")}
+        onOpenAdmin={() => handleNavigate("admin")}
       />
       <div className="content-area">
         <Suspense fallback={<p>読み込み中...</p>}>{renderView()}</Suspense>

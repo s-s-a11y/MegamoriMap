@@ -30,3 +30,13 @@ export function formatWalk(
     distanceM >= 1000 ? `${(distanceM / 1000).toFixed(1)}km` : `${distanceM}m`;
   return `徒歩${minutes}分（${distance}）`;
 }
+
+/**
+ * YYYYMMDDhhmmss 形式の日時を「YYYY/MM/DD hh:mm」に整形する(★C51 管理者ページ用)。
+ * 形式が違う場合(空文字など)は、そのまま返す。
+ */
+export function formatDateTime(value: string): string {
+  return /^\d{14}$/.test(value)
+    ? `${value.slice(0, 4)}/${value.slice(4, 6)}/${value.slice(6, 8)} ${value.slice(8, 10)}:${value.slice(10, 12)}`
+    : value;
+}

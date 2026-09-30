@@ -11,7 +11,13 @@ interface HeaderProps {
   onSaveUserName?: (name: string) => Promise<void>;
   // ★追加(機能追加#4)：「≡」メニューから行ってみたい店リストを開く
   onOpenWishlist?: () => void;
+  // ★追加(C50・C51)：マイページ・管理者ページ(管理者ページは管理者にだけ表示)
+  onOpenMyPage?: () => void;
+  onOpenAdmin?: () => void;
 }
+
+// 管理者のCognitoグループ(ShowStoreDetail.tsx と同じ)。表示を切り替えるだけで、実際の確認は Lambda 側で行う
+const ADMIN_GROUP = "megamorimap-admin";
 
 // Cognitoは標準的なOIDCの「ログアウトエンドポイント」を持たないため、
 // ログアウトは①ブラウザ側が持っているトークンを破棄、②Cognito自身の
@@ -32,8 +38,12 @@ export function Header({
   userName = null,
   onSaveUserName,
   onOpenWishlist,
+  onOpenMyPage,
+  onOpenAdmin,
 }: HeaderProps) {
   const auth = useAuth();
+  const loginGroups = auth.user?.profile["cognito:groups"];
+  const isAdmin = Array.isArray(loginGroups) && loginGroups.includes(ADMIN_GROUP);
   // ★追加(機能追加#1)：ユーザー名の変更フォームを開いているか
   const [isEditingName, setIsEditingName] = useState(false);
   // ★追加(C31)：ユーザー名変更・ログアウトをまとめた「≡」メニューを開いているか
@@ -117,6 +127,17 @@ export function Header({
                   {userName && (
                     <p className="app-header__menu-user">{userName} さん</p>
                   )}
+                  {onOpenMyPage && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        onOpenMyPage();
+                      }}
+                    >
+                      マイページ
+                    </button>
+                  )}
                   {onOpenWishlist && (
                     <button
                       type="button"
@@ -137,6 +158,17 @@ export function Header({
                       }}
                     >
                       ユーザー名変更
+                    </button>
+                  )}
+                  {isAdmin && onOpenAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        onOpenAdmin();
+                      }}
+                    >
+                      管理者ページ
                     </button>
                   )}
                   <button type="button" onClick={handleSignOut}>

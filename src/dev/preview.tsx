@@ -126,6 +126,29 @@ function installFakeApi(s: Scenario) {
         return json({ user_name: userName });
       case "/map":
         return json({ stores });
+      case "/users/me/activity":
+        return json({
+          counts: { stores: 1, menus: 1, comments: 2 },
+          stores: [{ place_id: PREVIEW_PLACE_ID, title: "プレビュー食堂 池袋本店", created_at: "20260929" }],
+          menus: [{ menu_id: "preview-menu-1", menu_name: "唐揚げ定食 特盛", price: 1200, place_id: PREVIEW_PLACE_ID, store_title: "プレビュー食堂 池袋本店", created_at: "20260929" }],
+          comments: [
+            { target: "menu", place_id: PREVIEW_PLACE_ID, store_title: "プレビュー食堂 池袋本店", menu_name: "唐揚げ定食 特盛", comment: "唐揚げが8個も入っていた", posted_at: "20260920" },
+            { target: "store", place_id: PREVIEW_PLACE_ID, store_title: "プレビュー食堂 池袋本店", menu_name: "", comment: "ご飯のおかわり無料", posted_at: "20260910" },
+          ],
+        });
+      case "/admin":
+        switch (body.action) {
+          case "summary":
+            return json({ stores: 3, deleted_stores: 1, menus: 2, comments: 3, users: 2, wishes: 4, closed_reports: 1 });
+          case "closed_places":
+            return json({ items: [{ place_id: "closed-1", title: "閉業した店", reported_by_name: "となりの花子", reported_at: "20260930100000" }] });
+          case "deleted_stores":
+            return json({ items: [{ place_id: "deleted-1", title: "削除した店", created_by_name: "プレビュー太郎", created_at: "20260901", deleted_at: "" }] });
+          case "users":
+            return json({ items: [{ user_name: "プレビュー太郎", stores: 1, menus: 1, comments: 2 }, { user_name: "となりの花子", stores: 0, menus: 1, comments: 1 }] });
+          default:
+            return json({ message: "OK" });
+        }
       case "/wishlist/candidates":
         return json({ candidates: candidatePool.filter((c) => !wishlist.some((w) => w.place_id === c.place_id)) });
       case "/wishlist/list":

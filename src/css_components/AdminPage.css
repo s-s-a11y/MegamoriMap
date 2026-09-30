@@ -1,0 +1,71 @@
+/*
+  AdminPage.tsx 専用のスタイル(★新規 C51 管理者ページ)。
+*/
+
+.admin {
+  max-width: 960px;
+}
+
+/* アプリ全体の数字 */
+.admin__summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.admin__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 6px;
+  background: var(--paper-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.admin__stat-number {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--persimmon-dark);
+}
+
+.admin__stat-label {
+  font-size: 12px;
+}
+
+/* 一覧の切り替え */
+.admin__tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--persimmon);
+  margin-bottom: 12px;
+}
+
+.admin__tab,
+.admin__tab:hover:not(:disabled) {
+  border-radius: 6px 6px 0 0;
+  color: var(--persimmon-dark);
+  background: var(--paper-soft);
+}
+
+.admin__tab.is-selected,
+.admin__tab.is-selected:hover:not(:disabled) {
+  color: var(--paper-soft);
+  background: var(--persimmon);
+}
+
+.admin__table td button {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.admin__empty,
+.admin__note {
+  font-size: 13px;
+  max-width: none;
+}
+
+.admin__note {
+  color: rgba(42, 23, 16, 0.7);
+}

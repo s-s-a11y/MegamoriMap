@@ -1,0 +1,87 @@
+/*
+  MyPage.tsx 専用のスタイル(★新規 C50 マイページ)。
+*/
+
+/* 数のまとめ：3つを横に並べ、押した項目の一覧を下に出す */
+.mypage__counts {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.mypage__count,
+.mypage__count:hover:not(:disabled) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1 1 0;
+  max-width: 10em;
+  padding: 12px 4px;
+  color: var(--ink);
+  background: var(--paper-soft);
+  border: 2px solid var(--line);
+  border-radius: 8px;
+}
+
+.mypage__count.is-selected,
+.mypage__count.is-selected:hover:not(:disabled) {
+  border-color: var(--persimmon);
+}
+
+.mypage__count-number {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--persimmon-dark);
+}
+
+.mypage__count-label {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap; /* 「登録したメニュー」が2行に折れないように */
+}
+
+.mypage__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.mypage__list li {
+  padding: 0;
+}
+
+/* 一覧の1行：押すとその店の詳細へ */
+.mypage__item,
+.mypage__item:hover:not(:disabled) {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--paper-soft);
+  border-radius: 6px;
+}
+
+.mypage__item:hover:not(:disabled) {
+  outline: 1px solid var(--turmeric);
+}
+
+.mypage__item-title {
+  font-weight: 700;
+}
+
+.mypage__item-meta {
+  font-size: 12px;
+  color: rgba(42, 23, 16, 0.7);
+}
+
+.mypage__empty {
+  text-align: center;
+}
