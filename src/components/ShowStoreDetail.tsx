@@ -151,6 +151,9 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
 
   // ---- 店舗情報まわりの状態 ----
   const [store, setStore] = useState<StoreDetail | null>(null);
+  // ★追加(C48)：この店が自分の行ってみたい店リストに入っているか(null=未ログイン・確認中)
+  const [isWished, setIsWished] = useState<boolean | null>(null);
+  const [wishBusy, setWishBusy] = useState(false);
   const [storeStatus, setStoreStatus] = useState<StoreStatus>("loading");
   const [storeErrorMessage, setStoreErrorMessage] = useState<string | null>(
     null,
@@ -408,6 +411,50 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
       dialog.close();
     }
   }, [menuPendingDelete]);
+
+  // ★追加(C48)：この店が自分の行ってみたい店リストに入っているかを確認する(ログイン中のみ)
+  useEffect(() => {
+    if (!auth.isAuthenticated) return;
+    let cancelled = false;
+    fetch(`${API_BASE_URL}/wishlist/list`, {
+      method: "POST",
+      headers: buildAuthHeaders(auth.user?.id_token),
+      body: JSON.stringify({ only_ids: true }),
+    })
+      .then((res) => (res.ok ? res.json() : Promise.reject(res)))
+      .then((data) => {
+        if (!cancelled) setIsWished((data.place_ids ?? []).includes(placeId));
+      })
+      .catch(() => {
+        // 確認できなかったときはボタンを出さない(店舗情報の表示には影響させない)
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.isAuthenticated, auth.user?.id_token, placeId]);
+
+  // ★追加(C48)：ハートボタンで行ってみたい店リストへの追加・削除を切り替える
+  const handleToggleWish = async () => {
+    if (!store || isWished === null) return;
+    setWishBusy(true);
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/wishlist/${isWished ? "delete" : "add"}`,
+        {
+          method: "POST",
+          headers: buildAuthHeaders(auth.user?.id_token),
+          body: JSON.stringify({ place_id: store.place_id, meal_time: store.meal_time }),
+        },
+      );
+      // 既にリストにある(409)ときは、入っている状態として扱う
+      if (!res.ok && res.status !== 409) throw new Error(await readErrorMessage(res));
+      setIsWished(!isWished);
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "行ってみたい店リストの更新に失敗しました");
+    } finally {
+      setWishBusy(false);
+    }
+  };
 
   // ★追加：メニュー写真拡大表示ダイアログの開閉制御
   useEffect(() => {
@@ -818,7 +865,23 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
 
             <dl>
               <dt>店舗名</dt>
-              <dd>{store.title}</dd>
+              <dd>
+                {store.title}
+                {/* ★追加(C48)：行ってみたい店リストへの追加・削除(ハート)。説明はマウスを乗せたときだけ出す */}
+                {auth.isAuthenticated && isWished !== null && (
+                  <button
+                    type="button"
+                    className={`wish-toggle${isWished ? " is-wished" : ""}`}
+                    onClick={handleToggleWish}
+                    disabled={wishBusy}
+                    aria-pressed={isWished}
+                    aria-label={isWished ? "行ってみたい店リストから外す" : "行ってみたい店リストに追加"}
+                    data-tooltip={isWished ? "行ってみたい店リストから外す" : "行ってみたい店リストに追加"}
+                  >
+                    {isWished ? "♥" : "♡"}
+                  </button>
+                )}
+              </dd>
 
               <dt>カテゴリー</dt>
               <dd>{store.store_category_name || "未設定"}</dd>

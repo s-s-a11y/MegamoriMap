@@ -90,9 +90,9 @@ function installFakeApi(s: Scenario) {
   const nameOf = (id: string) => (id === ME ? userName : names[id] ?? "");
 
   const stores = [
-    { place_id: PREVIEW_PLACE_ID, title: "プレビュー食堂 池袋本店", avg_price: 1200, address_label: "東京都豊島区西池袋1-1-1", store_url: "https://example.com", longitude: 139.7109, latitude: 35.7295, store_category_name: "定食", image_url: fakePhoto("表紙", "#b23913"), meal_time: "lunch", price_per_person: 0, created_at: daysAgo(2), walk_minutes: 11, walk_distance_m: 650 },
-    { place_id: "preview-place-2", title: "プレビュー酒場", avg_price: 0, address_label: "東京都豊島区東池袋1-1-1", store_url: "", longitude: 139.713, latitude: 35.73, store_category_name: "居酒屋", image_url: "", meal_time: "dinner", price_per_person: 3500, created_at: daysAgo(30), walk_minutes: 4, walk_distance_m: 280 },
-    { place_id: "preview-place-3", title: "プレビューらーめん", avg_price: 950, address_label: "東京都豊島区南池袋1-1-1", store_url: "", longitude: 139.711, latitude: 35.728, store_category_name: "ラーメン", image_url: fakePhoto("らーめん", "#46684a"), meal_time: "lunch", price_per_person: 0, created_at: daysAgo(10), walk_minutes: null, walk_distance_m: null },
+    { place_id: PREVIEW_PLACE_ID, title: "プレビュー食堂 池袋本店", avg_price: 1200, address_label: "東京都豊島区西池袋1-1-1", store_url: "https://example.com", longitude: 139.7109, latitude: 35.7295, store_category_name: "定食", image_url: fakePhoto("表紙", "#b23913"), meal_time: "lunch", price_per_person: 0, created_at: daysAgo(2), walk_minutes: 11, walk_distance_m: 650, wish_count: 1 },
+    { place_id: "preview-place-2", title: "プレビュー酒場", avg_price: 0, address_label: "東京都豊島区東池袋1-1-1", store_url: "", longitude: 139.713, latitude: 35.73, store_category_name: "居酒屋", image_url: "", meal_time: "dinner", price_per_person: 3500, created_at: daysAgo(30), walk_minutes: 4, walk_distance_m: 280, wish_count: 0 },
+    { place_id: "preview-place-3", title: "プレビューらーめん", avg_price: 950, address_label: "東京都豊島区南池袋1-1-1", store_url: "", longitude: 139.711, latitude: 35.728, store_category_name: "ラーメン", image_url: fakePhoto("らーめん", "#46684a"), meal_time: "lunch", price_per_person: 0, created_at: daysAgo(10), walk_minutes: null, walk_distance_m: null, wish_count: 3 },
   ];
 
   // ★追加(機能追加#4)：行ってみたい店リストの作り物(候補と、画面を開いている間だけ保持するリスト)
@@ -129,6 +129,7 @@ function installFakeApi(s: Scenario) {
       case "/wishlist/candidates":
         return json({ candidates: candidatePool.filter((c) => !wishlist.some((w) => w.place_id === c.place_id)) });
       case "/wishlist/list":
+        if (body.only_ids === true) return json({ place_ids: wishlist.map((w) => w.place_id) });
         return json({ items: wishlist });
       case "/wishlist/add": {
         const c = candidatePool.find((x) => x.place_id === body.place_id);

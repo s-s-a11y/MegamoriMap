@@ -31,14 +31,18 @@ type Store = {
   // ★追加(C41)：会社からの徒歩時間(分)と距離(m)。計算できなければnull(古いAPIの応答には無い)
   walk_minutes?: number | null;
   walk_distance_m?: number | null;
+  // ★追加(C47)：行ってみたい店リストへの登録数(並び替えにだけ使い、画面には表示しない)
+  wish_count?: number;
 };
 
 // ★追加(C41)：並び替えの種類
-type SortOrder = "new" | "near" | "cheap";
+type SortOrder = "new" | "near" | "cheap" | "popular";
 const SORT_LABELS: Record<SortOrder, string> = {
   new: "新着順",
   near: "会社から近い順",
   cheap: "安い順",
+  // ★追加(C47)。選択中は、選択欄の下に何の順かの注釈を出す(選択欄に入れると長くて切れるため)
+  popular: "行ってみたい順",
 };
 
 // 値が無い(null・0)店を、並び替えで常に最後に回すための比較
@@ -195,6 +199,13 @@ export function HomePage({
           compareWithMissingLast(a.walk_minutes ?? null, b.walk_minutes ?? null) ||
           compareWithMissingLast(a.walk_distance_m ?? null, b.walk_distance_m ?? null),
       );
+    } else if (sortOrder === "popular") {
+      // ★追加(C47)：登録数の多い順。同じ数なら新しい順
+      list.sort(
+        (a, b) =>
+          (b.wish_count ?? 0) - (a.wish_count ?? 0) ||
+          (b.created_at ?? "").localeCompare(a.created_at ?? ""),
+      );
     } else {
       const price = (store: Store) => getBudgetSourcePrice(store) || null;
       list.sort((a, b) => compareWithMissingLast(price(a), price(b)));
@@ -315,6 +326,11 @@ export function HomePage({
                 </option>
               ))}
             </select>
+            {sortOrder === "popular" && (
+              <small className="home-filters__note">
+                （行ってみたい店リストへの登録数が多い順）
+              </small>
+            )}
           </label>
         </div>
 

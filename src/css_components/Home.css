@@ -212,3 +212,10 @@
   font-size: 17px;
   border-radius: 24px;
 }
+
+/* ★追加(C47)：並び替え「行ってみたい順」の注釈 */
+.home-filters__note {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(42, 23, 16, 0.7);
+}
