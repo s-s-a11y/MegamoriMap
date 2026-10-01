@@ -2,12 +2,16 @@
   MyPage.tsx 専用のスタイル(★新規 C50 マイページ)。
 */
 
-/* 数のまとめ：3つを横に並べ、押した項目の一覧を下に出す */
+/* ★追加(C65)：管理者ページと同じ幅に広げる */
+.mypage {
+  max-width: 960px;
+}
+
+/* 数のまとめ：3つを横に並べ、押した項目の一覧を下に出す(★変更(C65)：左揃え) */
 .mypage__counts {
   display: flex;
-  justify-content: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 4px;
 }
 
 .mypage__count,
@@ -83,5 +87,5 @@
 }
 
 .mypage__empty {
-  text-align: center;
+  color: rgba(42, 23, 16, 0.7);
 }

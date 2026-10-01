@@ -9,9 +9,10 @@
 /* アプリ全体の数字 */
 .admin__summary {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 10px;
-  margin-bottom: 24px;
+  /* ★変更(C65)：スマホでも4列に収まるよう、1つあたりの最小幅を詰める */
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .admin__stat {
@@ -32,6 +33,13 @@
 
 .admin__stat-label {
   font-size: 12px;
+  white-space: nowrap; /* ★追加(C65)：「行ってみたい」が2行に折れないように */
+}
+
+@media (max-width: 600px) {
+  .admin__stat-label {
+    font-size: 11px;
+  }
 }
 
 /* 一覧の切り替え */

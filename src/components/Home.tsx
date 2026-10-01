@@ -280,6 +280,38 @@ export function HomePage({
       </nav>
 
       <main className="home-main">
+        {/* ★追加(C65)：画面の見出し。右(狭い画面では下)に行ってみたい店・全店舗の地図への入口 */}
+        <header className="home-head">
+          <div>
+            <h2>お店をさがす</h2>
+            <p>
+              {loadStatus === "success"
+                ? `登録されている${stores.length}店から、昼/晩やカテゴリーで絞り込めます`
+                : "昼/晩やカテゴリーで絞り込めます"}
+            </p>
+          </div>
+
+          {/* ★修正(機能追加#4)：「今日どこ行く？」(C40)を廃止し、行ってみたい店リストへの入口にする */}
+          <div className="home-wishlist">
+            <button
+              type="button"
+              className="home-wishlist__button"
+              onClick={() => onNavigate("wishlist")}
+            >
+              行ってみたい店を探す
+            </button>
+            {/* ★追加(C44)：全店舗の地図をモーダルで開く */}
+            <button
+              type="button"
+              className="home-wishlist__button"
+              onClick={() => setIsMapOpen(true)}
+              disabled={loadStatus !== "success" || stores.length === 0}
+            >
+              全店舗を地図で見る
+            </button>
+          </div>
+        </header>
+
         {/* ★修正(C33)：2つの絞り込みを横に並べ、1つあたりの幅を抑える(狭い画面では縦に並ぶ) */}
         <div className="home-filters">
           {/* ★追加(C39)：店名のキーワード検索 */}
@@ -332,26 +364,6 @@ export function HomePage({
               </small>
             )}
           </label>
-        </div>
-
-        {/* ★修正(機能追加#4)：「今日どこ行く？」(C40)を廃止し、行ってみたい店リストへの入口にする */}
-        <div className="home-wishlist">
-          <button
-            type="button"
-            className="home-wishlist__button"
-            onClick={() => onNavigate("wishlist")}
-          >
-            行ってみたい店を探す
-          </button>
-          {/* ★追加(C44)：全店舗の地図をモーダルで開く */}
-          <button
-            type="button"
-            className="home-wishlist__button"
-            onClick={() => setIsMapOpen(true)}
-            disabled={loadStatus !== "success" || stores.length === 0}
-          >
-            全店舗を地図で見る
-          </button>
         </div>
 
         {isMapOpen && (

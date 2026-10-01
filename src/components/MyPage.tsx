@@ -60,7 +60,11 @@ export function MyPage({ userName, onNavigate }: MyPageProps) {
 
   return (
     <main className="mypage">
-      <h2>{userName ? `${userName} さんのマイページ` : "マイページ"}</h2>
+      {/* ★変更(C65)：見出しに説明を添える */}
+      <header>
+        <h2>{userName ? `${userName} さんのマイページ` : "マイページ"}</h2>
+        <p>登録した店・メニューと、書いたコメントを確認できます。押すとその店の詳細へ移ります</p>
+      </header>
       {error && <p role="alert">{error}</p>}
       {!activity && !error && <p>読み込み中...</p>}
 

@@ -3,25 +3,39 @@
 */
 
 .wishlist {
-  max-width: none;
+  /* ★変更(C65)：画面幅いっぱい → 店舗詳細・トップと同じ最大1200pxで中央に */
+  max-width: 1200px;
 }
 
 .wishlist__section {
-  margin-bottom: 32px;
+  margin-bottom: 16px;
 }
 
+/* ★変更(C65)：見出しは左揃え(中央揃えをやめた) */
 .wishlist__section h3 {
-  text-align: center;
+  margin: 0 0 12px;
+}
+
+/* ★追加(C65)：候補探しは1枚のカードにまとめる(共通の section の区切り線は使わない) */
+.wishlist__section--search {
+  margin-top: 0;
+  padding: 16px 20px;
+  background: var(--paper-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
 }
 
 /* 昼/晩の切り替えと「候補を探す」を横に並べる(狭い画面では折り返す) */
 .wishlist__search {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   align-items: center;
   gap: 16px;
-  margin-bottom: 16px;
+}
+
+/* 候補が出たら、探す操作との間を空ける */
+.wishlist__search + * {
+  margin-top: 16px;
 }
 
 .wishlist__meal {
@@ -68,10 +82,14 @@
   margin-top: 4px;
 }
 
+/* ★追加(C65)：ボタンはカードの下端にそろえる(同じ行のカードで高さが違っても揃う) */
+.wishlist__card button:first-of-type {
+  margin-top: auto;
+}
+
 .wishlist__name {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
   font-size: 16px;
   font-weight: 700;
@@ -128,7 +146,8 @@
 /* 「閉業していた」は目立たせすぎないよう、文字だけのボタンにする */
 .wishlist__closed-button,
 .wishlist__closed-button:hover:not(:disabled) {
-  padding: 4px 8px;
+  align-self: flex-start;
+  padding: 4px 0;
   font-size: 13px;
   font-weight: 500;
   color: rgba(42, 23, 16, 0.65);

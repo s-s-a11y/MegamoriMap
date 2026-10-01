@@ -89,7 +89,11 @@ export function AdminPage() {
 
   return (
     <main className="admin">
-      <h2>管理者ページ</h2>
+      {/* ★変更(C65)：見出しに説明を添える */}
+      <header>
+        <h2>管理者ページ</h2>
+        <p>アプリ全体の数字の確認と、閉業報告・削除した店の管理ができます</p>
+      </header>
       {error && <p role="alert">{error}</p>}
       {!summary && !error && <p>読み込み中...</p>}
 

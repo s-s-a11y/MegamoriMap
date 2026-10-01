@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に合わせてパスを調整してください
 import { ImagePickerWithRotation } from "./ImagePickerWithRotation"; // 実際の配置場所に合わせてパスを調整してください
+import "../css_components/RegistMenu.css"; // ★追加(C65)
 import { buildAuthHeaders } from "../utils/authHeaders"; // 実際の配置場所に合わせてパスを調整してください
 import { API_BASE_URL, readErrorMessage } from "../utils/api";
 
@@ -101,13 +102,17 @@ export function RegisterMenuPage({
     <div>
       {/* ★変更：h1・nav(戻る/店舗登録へ)を削除。
           タイトルは共通ヘッダー側、Homeへの導線もそちらに移したため。 */}
-      <main>
-        {/* ★追加：place_idは表示せず、店舗名だけを文脈として表示する */}
-        <p>
-          「<strong>{storeName}</strong>」にメニューを登録します。
-        </p>
+      <main className="regist-menu">
+        {/* ★変更(C65)：画面の見出しを付け、店舗名は説明文に入れる。
+            ★追加：place_idは表示せず、店舗名だけを文脈として表示する */}
+        <header>
+          <h2>メニューを登録する</h2>
+          <p>
+            「<strong>{storeName}</strong>」にメニューを登録します
+          </p>
+        </header>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="regist-menu__form">
           <label>
             メニュー名（{MENU_NAME_MAX_LENGTH}文字以内）
             <input

@@ -36,6 +36,12 @@ const SCENARIOS: Record<string, Scenario> = {
   "detail-other": { description: "店舗詳細・他の人が登録者(削除ボタンなし)", loggedIn: true, userName: "プレビュー太郎", isAdmin: false, storeOwner: OTHER, initialView: "store-detail" },
   "detail-admin": { description: "店舗詳細・他の人が登録者だが管理者", loggedIn: true, userName: "プレビュー管理者", isAdmin: true, storeOwner: OTHER, initialView: "store-detail" },
   "detail-guest": { description: "店舗詳細・未ログイン", loggedIn: false, userName: "", isAdmin: false, storeOwner: OTHER, initialView: "store-detail" },
+  // ★追加(C65)：店舗詳細以外の画面のデザイン確認用
+  wishlist: { description: "行ってみたい店", loggedIn: true, userName: "プレビュー太郎", isAdmin: false, storeOwner: ME, initialView: "wishlist" },
+  mypage: { description: "マイページ", loggedIn: true, userName: "プレビュー太郎", isAdmin: false, storeOwner: ME, initialView: "mypage" },
+  admin: { description: "管理者ページ", loggedIn: true, userName: "プレビュー管理者", isAdmin: true, storeOwner: OTHER, initialView: "admin" },
+  "regist-store": { description: "店舗登録", loggedIn: true, userName: "プレビュー太郎", isAdmin: false, storeOwner: ME, initialView: "regist-store" },
+  "regist-menu": { description: "メニュー登録", loggedIn: true, userName: "プレビュー太郎", isAdmin: false, storeOwner: ME, initialView: "regist-menu" },
 };
 
 export const PREVIEW_PLACE_ID = "preview-place-1";

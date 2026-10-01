@@ -191,10 +191,14 @@ export function WishlistPage({ onNavigate, onRegistStore }: WishlistPageProps) {
 
   return (
     <main className="wishlist">
-      <h2>行ってみたい店</h2>
+      {/* ★変更(C65)：見出しに説明を添える */}
+      <header>
+        <h2>行ってみたい店</h2>
+        <p>会社の近くの、まだ登録されていない店を探して、気になる店をリストに保存できます</p>
+      </header>
 
       {/* ---- 候補を探す ---- */}
-      <section className="wishlist__section">
+      <section className="wishlist__section wishlist__section--search">
         <h3>会社から徒歩10分以内の、まだ登録されていない店</h3>
         <div className="wishlist__search">
           <div className="wishlist__meal" role="radiogroup" aria-label="昼か晩か">

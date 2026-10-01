@@ -1,0 +1,84 @@
+/*
+  RegistStore.tsx 専用のスタイル(★新規 C65 デザインの統一)。
+  「1 検索して選ぶ → 2 カテゴリー → 3 登録内容」を手順ごとのカードに分ける。
+*/
+
+.regist-store {
+  max-width: 720px;
+}
+
+/* 手順ごとのカード(共通の section の区切り線の代わりに枠で囲む) */
+.regist-store__step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 0;
+  padding: 16px 20px 20px;
+  background: var(--paper-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.regist-store__step-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 18px;
+}
+
+/* 手順の番号を柿色の丸で示す */
+.regist-store__step-no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  color: var(--paper-soft);
+  background: var(--persimmon);
+}
+
+.regist-store__step input,
+.regist-store__step select,
+.regist-store__step textarea {
+  background: #fff;
+}
+
+.regist-store__step search input {
+  flex: 1;
+}
+
+/* 検索結果：1件ずつ押しやすい行にし、選んだ行を柿色の枠で示す */
+.regist-store__results li {
+  padding: 0;
+  background: #fff;
+}
+
+.regist-store__results label {
+  display: block;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.regist-store__results li:has(input:checked) {
+  border-color: var(--persimmon);
+  outline: 1px solid var(--persimmon);
+}
+
+.regist-store__selected {
+  margin: 0;
+}
+
+.regist-store__category {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.regist-store__category select {
+  flex: 1 1 12em;
+}

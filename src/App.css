@@ -151,6 +151,36 @@ main {
   width: 100%;
   max-width: 640px;
   margin: 0 auto;
+  /* ★追加(C65)：店舗詳細に合わせ、本文は左揃え */
+  text-align: left;
+}
+
+/*
+  ★追加(C65)：各画面の見出し。main の先頭に <header><h2>題名</h2><p>説明</p></header> を置く。
+  店舗詳細(店舗名＋札)と同じく、左揃えの大きな題名と、控えめな説明文。
+*/
+main > header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+main > header h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+main > header p {
+  margin: 0;
+  max-width: none;
+  font-size: 14px;
+  color: rgba(42, 23, 16, 0.7);
+}
+
+@media (min-width: 1024px) {
+  main > header h2 {
+    font-size: 32px;
+  }
 }
 
 /* ---- 検索欄(<search>ランドマーク) ---- */

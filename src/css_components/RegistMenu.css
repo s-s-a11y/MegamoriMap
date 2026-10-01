@@ -1,0 +1,20 @@
+/*
+  RegistMenu.tsx 専用のスタイル(★新規 C65 デザインの統一)。
+  入力欄を1枚のカードにまとめる。
+*/
+
+.regist-menu {
+  max-width: 720px;
+}
+
+.regist-menu__form {
+  padding: 20px;
+  background: var(--paper-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.regist-menu__form input,
+.regist-menu__form textarea {
+  background: #fff;
+}
