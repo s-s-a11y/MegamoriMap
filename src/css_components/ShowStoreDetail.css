@@ -358,3 +358,182 @@
 .wish-toggle:focus-visible::after {
   opacity: 1;
 }
+
+/*
+  ---- ★追加(C64)：店舗詳細の構成 ----
+  見出し(店舗名＋要点の札) → 写真 → 店舗情報と地図のカード → メニュー → コメント → 金額の申告。
+  スマホ等では1列、PC幅(1024px以上)では「写真｜カード」「コメント｜金額の申告」を左右に並べる。
+*/
+.store-detail-main {
+  text-align: left;
+}
+
+/* 見出し：店舗名を大きく、要点(カテゴリー・昼/晩・徒歩・予算)を札で並べる */
+.store-detail-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.store-detail-head__title {
+  margin: 0;
+  font-size: 24px;
+}
+
+.store-detail-head__chips {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.store-detail-head__chips li {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.store-detail-head__chips small {
+  margin-left: 4px;
+  font-weight: 400;
+}
+
+.store-detail-head__meal--lunch {
+  background: var(--turmeric);
+  border-color: var(--turmeric);
+}
+
+.store-detail-head__meal--dinner {
+  background: var(--charcoal);
+  border-color: var(--charcoal);
+  color: var(--paper-soft);
+}
+
+/* 写真と、その下の追加フォーム */
+.store-detail-media {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.store-detail-media .store-image-carousel {
+  border-radius: 8px;
+}
+
+/* 店舗情報＋地図を1枚のカードに */
+.store-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  background: var(--paper-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.store-detail-info dl {
+  display: grid;
+  grid-template-columns: 5.5em minmax(0, 1fr);
+  gap: 12px 16px;
+}
+
+.store-detail-info dt,
+.store-detail-info dd {
+  margin: 0;
+}
+
+.store-detail-info dt {
+  font-size: 13px;
+}
+
+.store-detail-info dd {
+  overflow-wrap: anywhere;
+}
+
+/* 営業時間：共通の li のカード表示をやめ、行として並べる */
+.store-detail-info dd ul {
+  gap: 2px;
+}
+
+.store-detail-info dd li {
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.store-detail-info .map-wrapper {
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.store-detail-info #map-canvas {
+  height: 260px;
+}
+
+@media (min-width: 1024px) {
+  .store-detail-main {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    grid-template-areas:
+      "head head"
+      "media info"
+      "menus menus"
+      "comments price";
+    align-items: start;
+    gap: 24px 32px;
+    max-width: 1200px;
+  }
+
+  /* 読み込み中・エラーの表示は全幅 */
+  .store-detail-main > p {
+    grid-column: 1 / -1;
+  }
+
+  .store-detail-head {
+    grid-area: head;
+    gap: 12px;
+  }
+
+  .store-detail-head__title {
+    font-size: 32px;
+  }
+
+  .store-detail-head__chips li {
+    padding: 4px 14px;
+    font-size: 14px;
+  }
+
+  .store-detail-media {
+    grid-area: media;
+  }
+
+  /* 右のカードと高さが釣り合うよう、少し横長にする */
+  .store-detail-media .store-image-carousel {
+    aspect-ratio: 3 / 2;
+  }
+
+  .store-detail-info {
+    grid-area: info;
+    padding: 20px;
+  }
+
+  .store-detail-info #map-canvas {
+    height: 280px;
+  }
+
+  .store-detail-menus {
+    grid-area: menus;
+  }
+
+  .store-detail-comments {
+    grid-area: comments;
+  }
+
+  .store-detail-price {
+    grid-area: price;
+  }
+
+  /* 昼の店(金額の申告が無い)は、コメントを全幅に */
+  .store-detail-main:not(:has(.store-detail-price)) .store-detail-comments {
+    grid-column: 1 / -1;
+  }
+}

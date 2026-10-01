@@ -725,6 +725,21 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
     touchStartXRef.current = null;
   };
 
+  // ★追加(C64)：ハートボタン(見出しの店舗名の横に出す)
+  const wishButton = auth.isAuthenticated && isWished !== null && (
+    <button
+      type="button"
+      className={`wish-toggle${isWished ? " is-wished" : ""}`}
+      onClick={handleToggleWish}
+      disabled={wishBusy}
+      aria-pressed={isWished}
+      aria-label={isWished ? "行ってみたい店リストから外す" : "行ってみたい店リストに追加"}
+      data-tooltip={isWished ? "行ってみたい店リストから外す" : "行ってみたい店リストに追加"}
+    >
+      {isWished ? "♥" : "♡"}
+    </button>
+  );
+
   return (
     <div>
       {/* ★変更：h1・「← 戻る」ボタンを削除(共通ヘッダー側に移した)。
@@ -766,7 +781,9 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
         </p>
       )}
 
-      <main>
+      {/* ★変更(C64)：「見出し → 写真 → 店舗情報＋地図のカード → メニュー → コメント → 金額の申告」の構成。
+          PC幅では「写真｜カード」「コメント｜金額の申告」を左右に並べる(ShowStoreDetail.css参照) */}
+      <main className="store-detail-main">
         {storeStatus === "loading" && <p>読み込み中...</p>}
 
         {storeStatus === "not-found" && (
@@ -775,8 +792,33 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
 
         {storeStatus === "error" && <p role="alert">{storeErrorMessage}</p>}
 
+        {/* ★追加(C64)：見出し(店舗名と、ひと目で分かる要点の札) */}
         {storeStatus === "success" && store && (
-          <>
+          <header className="store-detail-head">
+            <h2 className="store-detail-head__title">
+              {store.title}
+              {wishButton}
+            </h2>
+            <ul className="store-detail-head__chips">
+              <li>{store.store_category_name || "カテゴリー未設定"}</li>
+              <li className={`store-detail-head__meal--${store.meal_time}`}>
+                {MEAL_TIME_LABELS[store.meal_time] ?? store.meal_time}
+              </li>
+              {formatWalk(store.walk_minutes, store.walk_distance_m) && (
+                <li>会社から{formatWalk(store.walk_minutes, store.walk_distance_m)}</li>
+              )}
+              <li>
+                {formatBudgetBand(getBudgetSourcePrice(store))}
+                {store.meal_time === "dinner" && (
+                  <small>（申告{store.price_reports.length}件の平均）</small>
+                )}
+              </li>
+            </ul>
+          </header>
+        )}
+
+        {storeStatus === "success" && store && (
+          <div className="store-detail-media">
             {/* ★変更：単一画像の表示を、複数画像対応のカルーセルに置き換え */}
             {galleryImages.length > 0 ? (
               <div
@@ -862,34 +904,14 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                 {addImageStatus === "loading" ? "追加中..." : "写真を追加する"}
               </button>
             </form>
+          </div>
+        )}
 
+        {/* ★追加(C64)：店舗情報と地図を1枚のカードにまとめる */}
+        <div className="store-detail-info">
+          {storeStatus === "success" && store && (
             <dl>
-              <dt>店舗名</dt>
-              <dd>
-                {store.title}
-                {/* ★追加(C48)：行ってみたい店リストへの追加・削除(ハート)。説明はマウスを乗せたときだけ出す */}
-                {auth.isAuthenticated && isWished !== null && (
-                  <button
-                    type="button"
-                    className={`wish-toggle${isWished ? " is-wished" : ""}`}
-                    onClick={handleToggleWish}
-                    disabled={wishBusy}
-                    aria-pressed={isWished}
-                    aria-label={isWished ? "行ってみたい店リストから外す" : "行ってみたい店リストに追加"}
-                    data-tooltip={isWished ? "行ってみたい店リストから外す" : "行ってみたい店リストに追加"}
-                  >
-                    {isWished ? "♥" : "♡"}
-                  </button>
-                )}
-              </dd>
-
-              <dt>カテゴリー</dt>
-              <dd>{store.store_category_name || "未設定"}</dd>
-
-              {/* ★追加：昼/晩の表示(居酒屋対応) */}
-              <dt>昼/晩</dt>
-              <dd>{MEAL_TIME_LABELS[store.meal_time] ?? store.meal_time}</dd>
-
+              {/* ★変更(C64)：店舗名・カテゴリー・昼/晩・徒歩・予算帯は上の見出し(店舗名と札)に移した */}
               {/* ★追加：営業時間の表示(自動取得できていれば)。取得できていなければ非表示 */}
               {(store.business_hours ?? []).length > 0 && (
                 <>
@@ -911,27 +933,6 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
               <dt>住所</dt>
               <dd>{store.address_label}</dd>
 
-              {/* ★追加(機能追加#2)：会社からの徒歩時間。計算できていなければ非表示 */}
-              {formatWalk(store.walk_minutes, store.walk_distance_m) && (
-                <>
-                  <dt>会社から</dt>
-                  <dd>{formatWalk(store.walk_minutes, store.walk_distance_m)}</dd>
-                </>
-              )}
-
-              <dt>予算帯</dt>
-              <dd>
-                {formatBudgetBand(getBudgetSourcePrice(store))}
-                {/* ★追加：夜の店は、何に基づく数字かを分かるようにしておく */}
-                {store.meal_time === "dinner" && (
-                  <small>
-                    （来店者
-                    {store.price_reports.length}
-                    件の申告額の平均）
-                  </small>
-                )}
-              </dd>
-
               {/* ★修正：http(s)のURLのときだけリンクとして表示する(C17) */}
               {store.store_url && isHttpUrl(store.store_url) && (
                 <>
@@ -944,127 +945,25 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                 </>
               )}
             </dl>
-          </>
-        )}
-
-        {/* ★変更：地図を囲うラッパーに、1回タップするまでの操作不可オーバーレイを重ねる */}
-        <div className="map-wrapper">
-          <div id="map-canvas" ref={mapContainer} />
-          {!isMapActive && (
-            <div
-              className="map-activate-overlay"
-              onClick={() => setIsMapActive(true)}
-            >
-              <p>タップして地図を操作する</p>
-            </div>
           )}
+
+          {/* ★変更：地図を囲うラッパーに、1回タップするまでの操作不可オーバーレイを重ねる */}
+          <div className="map-wrapper">
+            <div id="map-canvas" ref={mapContainer} />
+            {!isMapActive && (
+              <div
+                className="map-activate-overlay"
+                onClick={() => setIsMapActive(true)}
+              >
+                <p>タップして地図を操作する</p>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* --- コメント --- */}
-        {storeStatus === "success" && store && (
-          <section>
-            <h2>コメント</h2>
-
-            {store.comments.length === 0 && <p>まだコメントはありません。</p>}
-
-            {store.comments.length > 0 && (
-              <ul>
-                {store.comments.map((c, index) => (
-                  <li key={index}>
-                    <p>{c.comment}</p>
-                    {/* ★修正(機能追加#1)：投稿者と投稿日を表示する */}
-                    <small>
-                      {displayUserName(c.posted_by_name)}・
-                      {formatPostedDate(c.posted_at)}
-                    </small>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {/* ★修正(C37)：上のコメント一覧とくっつかないよう、間隔を空ける */}
-            <form onSubmit={handleAddComment} className="store-comment-form">
-              <label>
-                コメントを追加
-                <textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  rows={3}
-                  required
-                />
-              </label>
-
-              {addCommentStatus === "error" && (
-                <p role="alert">{addCommentError}</p>
-              )}
-
-              <button
-                type="submit"
-                disabled={
-                  addCommentStatus === "loading" ||
-                  !newComment.trim() ||
-                  !auth.isAuthenticated
-                }
-              >
-                {addCommentStatus === "loading"
-                  ? "追加中..."
-                  : "コメントを追加する"}
-              </button>
-            </form>
-          </section>
-        )}
-
-        {/* --- 使った金額の申告(夜の店専用) --- */}
-        {storeStatus === "success" && store && store.meal_time === "dinner" && (
-          <section>
-            <h2>実際に使った金額</h2>
-
-            {store.price_reports.length === 0 && <p>まだ申告はありません。</p>}
-
-            {store.price_reports.length > 0 && (
-              <ul>
-                {store.price_reports.map((report, index) => (
-                  <li key={index}>
-                    <p>¥{report.amount.toLocaleString()} / 人</p>
-                    <small>{report.posted_at}</small>
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            <form onSubmit={handleAddPriceReport}>
-              <label>
-                実際に使った金額（1人あたり）
-                <input
-                  type="number"
-                  value={newPriceAmount}
-                  min={0}
-                  onChange={(e) => setNewPriceAmount(e.target.value)}
-                  required
-                />
-              </label>
-
-              {addPriceStatus === "error" && (
-                <p role="alert">{addPriceError}</p>
-              )}
-
-              <button
-                type="submit"
-                disabled={
-                  addPriceStatus === "loading" ||
-                  newPriceAmount === "" ||
-                  !auth.isAuthenticated
-                }
-              >
-                {addPriceStatus === "loading" ? "申告中..." : "金額を申告する"}
-              </button>
-            </form>
-          </section>
-        )}
-
-        {/* --- メニュー一覧 --- */}
+        {/* --- メニュー一覧 --- ★変更(C64)：コメントより前に移動(どの画面幅でも写真・店舗情報の次にメニュー) */}
         {storeStatus === "success" && (
-          <section>
+          <section className="store-detail-menus">
             <h2>メニュー</h2>
 
             {menuStatus === "loading" && <p>メニューを読み込み中...</p>}
@@ -1183,6 +1082,108 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
                 ))}
               </ul>
             )}
+          </section>
+        )}
+
+        {/* --- コメント --- */}
+        {storeStatus === "success" && store && (
+          <section className="store-detail-comments">
+            <h2>コメント</h2>
+
+            {store.comments.length === 0 && <p>まだコメントはありません。</p>}
+
+            {store.comments.length > 0 && (
+              <ul>
+                {store.comments.map((c, index) => (
+                  <li key={index}>
+                    <p>{c.comment}</p>
+                    {/* ★修正(機能追加#1)：投稿者と投稿日を表示する */}
+                    <small>
+                      {displayUserName(c.posted_by_name)}・
+                      {formatPostedDate(c.posted_at)}
+                    </small>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* ★修正(C37)：上のコメント一覧とくっつかないよう、間隔を空ける */}
+            <form onSubmit={handleAddComment} className="store-comment-form">
+              <label>
+                コメントを追加
+                <textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  rows={3}
+                  required
+                />
+              </label>
+
+              {addCommentStatus === "error" && (
+                <p role="alert">{addCommentError}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={
+                  addCommentStatus === "loading" ||
+                  !newComment.trim() ||
+                  !auth.isAuthenticated
+                }
+              >
+                {addCommentStatus === "loading"
+                  ? "追加中..."
+                  : "コメントを追加する"}
+              </button>
+            </form>
+          </section>
+        )}
+
+        {/* --- 使った金額の申告(夜の店専用) --- */}
+        {storeStatus === "success" && store && store.meal_time === "dinner" && (
+          <section className="store-detail-price">
+            <h2>実際に使った金額</h2>
+
+            {store.price_reports.length === 0 && <p>まだ申告はありません。</p>}
+
+            {store.price_reports.length > 0 && (
+              <ul>
+                {store.price_reports.map((report, index) => (
+                  <li key={index}>
+                    <p>¥{report.amount.toLocaleString()} / 人</p>
+                    <small>{report.posted_at}</small>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <form onSubmit={handleAddPriceReport}>
+              <label>
+                実際に使った金額（1人あたり）
+                <input
+                  type="number"
+                  value={newPriceAmount}
+                  min={0}
+                  onChange={(e) => setNewPriceAmount(e.target.value)}
+                  required
+                />
+              </label>
+
+              {addPriceStatus === "error" && (
+                <p role="alert">{addPriceError}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={
+                  addPriceStatus === "loading" ||
+                  newPriceAmount === "" ||
+                  !auth.isAuthenticated
+                }
+              >
+                {addPriceStatus === "loading" ? "申告中..." : "金額を申告する"}
+              </button>
+            </form>
           </section>
         )}
       </main>
