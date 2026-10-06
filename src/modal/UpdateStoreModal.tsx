@@ -5,14 +5,16 @@ import { ImagePickerWithRotation } from "../components/ImagePickerWithRotation";
 import { buildAuthHeaders } from "../utils/authHeaders"; // 実際の配置場所に合わせてパスを調整してください
 import { API_BASE_URL, readErrorMessage } from "../utils/api";
 import { isHttpUrl } from "../utils/url";
+import { looksLikeAddress, type MealTime } from "../utils/mealTime"; // ★追加(C71)
+import "../css_components/UpdateStoreModal.css"; // ★追加(C71)
 
 interface StoreForUpdate {
   place_id: string;
   title: string;
   store_category_name: string;
   store_url: string;
-  // ★追加：昼/晩(居酒屋対応)
-  meal_time: "lunch" | "dinner";
+  // ★追加：昼/晩(居酒屋対応)。★変更(C71)：「昼・晩どちらも」を追加
+  meal_time: MealTime;
 }
 
 interface UpdateStoreModalProps {
@@ -35,10 +37,16 @@ export function UpdateStoreModal({
   const auth = useAuth();
 
   const [categories, setCategories] = useState<string[]>([]);
+  // ★追加(C71)：店名も直せるようにする(住所が店名として登録されてしまった店の修正用)
+  const [title, setTitle] = useState(store.title);
   const [category, setCategory] = useState(store.store_category_name);
+  // ★追加(C71)：その場で新しいカテゴリーを作る
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [categoryError, setCategoryError] = useState<string | null>(null);
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [storeUrl, setStoreUrl] = useState(store.store_url);
   // ★追加：昼/晩(居酒屋対応)
-  const [mealTime, setMealTime] = useState<"lunch" | "dinner">(store.meal_time);
+  const [mealTime, setMealTime] = useState<MealTime>(store.meal_time);
   const [imageFile, setImageFile] = useState<File | null>(null);
   // ★追加：画像の回転角度(0/90/180/270)
   const [imageRotation, setImageRotation] = useState(0);
@@ -68,6 +76,41 @@ export function UpdateStoreModal({
       .then((res) => res.json())
       .then((data) => setCategories(data.categories ?? []));
   }, [isOpen]);
+
+  // ★追加(C71)：新しいカテゴリーを作り、そのまま選んだ状態にする(店舗登録画面と同じAPI)
+  const handleCreateCategory = async () => {
+    const trimmedName = newCategoryName.trim();
+    if (!trimmedName) return;
+    setIsCreatingCategory(true);
+    setCategoryError(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/categories/stores`, {
+        method: "POST",
+        headers: buildAuthHeaders(auth.user?.id_token),
+        body: JSON.stringify({ store_category_name: trimmedName }),
+      });
+      // 409は「既にある」なので、そのまま選べばよい
+      if (!res.ok && res.status !== 409) {
+        throw new Error(await readErrorMessage(res));
+      }
+      setCategories((prev) =>
+        prev.includes(trimmedName) ? prev : [...prev, trimmedName],
+      );
+      setCategory(trimmedName);
+      setNewCategoryName("");
+    } catch (err) {
+      setCategoryError(
+        err instanceof Error ? err.message : "カテゴリーの作成に失敗しました",
+      );
+    } finally {
+      setIsCreatingCategory(false);
+    }
+  };
+
+  // 今のカテゴリーが一覧に無い場合(削除された等)でも、選択肢に残す
+  const categoryOptions = categories.includes(category)
+    ? categories
+    : [category, ...categories].filter(Boolean);
 
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -104,6 +147,7 @@ export function UpdateStoreModal({
         headers: buildAuthHeaders(auth.user?.id_token),
         body: JSON.stringify({
           place_id: store.place_id,
+          title: title.trim(), // ★追加(C71)
           store_category_name: category,
           store_url: trimmedStoreUrl,
           meal_time: mealTime,
@@ -131,19 +175,54 @@ export function UpdateStoreModal({
       <p>{store.title}</p>
 
       <form onSubmit={handleSubmit}>
+        {/* ★追加(C71)：店名 */}
+        <label>
+          店名
+          <input
+            type="text"
+            value={title}
+            maxLength={50}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
+        </label>
+        {looksLikeAddress(title) && (
+          <p role="status" className="update-store__name-warning">
+            店名が住所になっています。お店の名前に直してください。
+          </p>
+        )}
+
         <label>
           カテゴリー
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
           >
-            {categories.map((name) => (
+            {categoryOptions.map((name) => (
               <option key={name} value={name}>
                 {name}
               </option>
             ))}
           </select>
         </label>
+        {/* ★追加(C71)：一覧に無いカテゴリーは、ここで作ってそのまま選べる */}
+        <div className="update-store__new-category">
+          <input
+            type="text"
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            placeholder="新しいカテゴリー（例: つけ麺）"
+            aria-label="新しいカテゴリー名"
+          />
+          <button
+            type="button"
+            onClick={handleCreateCategory}
+            disabled={isCreatingCategory || !newCategoryName.trim() || !auth.isAuthenticated}
+          >
+            {isCreatingCategory ? "作成中..." : "作って選ぶ"}
+          </button>
+        </div>
+        {categoryError && <p role="alert">{categoryError}</p>}
 
         <label>
           店舗URL（任意）
@@ -177,6 +256,17 @@ export function UpdateStoreModal({
             />{" "}
             晩
           </label>
+          {/* ★追加(C71)：昼・晩どちらも */}
+          <label>
+            <input
+              type="radio"
+              name="update-meal-time"
+              value="both"
+              checked={mealTime === "both"}
+              onChange={() => setMealTime("both")}
+            />{" "}
+            昼・晩どちらも
+          </label>
         </fieldset>
 
         {/* ★変更：プレビュー＋回転ボタン付きの共有コンポーネントに置き換え */}
@@ -196,7 +286,7 @@ export function UpdateStoreModal({
           </button>
           <button
             type="submit"
-            disabled={status === "loading" || !auth.isAuthenticated}
+            disabled={status === "loading" || !auth.isAuthenticated || !title.trim()}
           >
             {status === "loading" ? "更新中..." : "更新する"}
           </button>

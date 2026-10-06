@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "react-oidc-context";
-import { formatBudgetBand, getBudgetSourcePrice } from "../utils/FormatPrice"; // 実際の配置場所に合わせてパスを調整してください
+import { formatBudgetBand, getBudgetSourcePrice, isBudgetFromReports } from "../utils/FormatPrice"; // 実際の配置場所に合わせてパスを調整してください
 import { uploadImage } from "../utils/ImageUpload"; // 実際の配置場所に合わせてパスを調整してください
 import { UpdateStoreModal } from "../modal/UpdateStoreModal"; // 実際の配置場所に合わせてパスを調整してください
 import { UpdateMenuModal } from "../modal/UpdateMenuModal"; // 実際の配置場所に合わせてパスを調整してください
@@ -15,6 +15,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { API_BASE_URL, readErrorMessage } from "../utils/api";
 import { isHttpUrl } from "../utils/url";
+import { MEAL_TIME_LABELS, type MealTime } from "../utils/mealTime"; // ★追加(C71)
 import { displayUserName, formatPostedDate, formatWalk } from "../utils/format";
 
 // アプリ起動時に一度だけ、workerの場所をMapLibreに教える
@@ -66,7 +67,7 @@ interface StoreDetail {
   longitude: number;
   latitude: number;
   // ★追加：昼/晩の絞り込み用(居酒屋対応)
-  meal_time: "lunch" | "dinner";
+  meal_time: MealTime;
   // ★追加：Amazon Location Serviceから自動取得した営業時間(無ければ空配列)
   business_hours: string[];
   // ★追加：夜(dinner)の店の予算帯表示に使う、申告額の平均と申告一覧
@@ -76,12 +77,6 @@ interface StoreDetail {
   walk_minutes?: number | null;
   walk_distance_m?: number | null;
 }
-
-// meal_timeの値を、画面表示用の日本語に変換する
-const MEAL_TIME_LABELS: Record<string, string> = {
-  lunch: "昼",
-  dinner: "晩",
-};
 
 // ShowStoreMenus Lambdaが返す、メニュー1件分の情報
 interface Menu {
@@ -809,7 +804,8 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
               )}
               <li>
                 {formatBudgetBand(getBudgetSourcePrice(store))}
-                {store.meal_time === "dinner" && (
+                {/* ★変更(C71)：申告額から出しているときだけ注記する(昼の店でも申告できるようにしたため) */}
+                {isBudgetFromReports(store) && (
                   <small>（申告{store.price_reports.length}件の平均）</small>
                 )}
               </li>
@@ -1139,8 +1135,8 @@ export function StoreDetailPage({ placeId, onNavigate }: StoreDetailPageProps) {
           </section>
         )}
 
-        {/* --- 使った金額の申告(夜の店専用) --- */}
-        {storeStatus === "success" && store && store.meal_time === "dinner" && (
+        {/* --- 使った金額の申告 --- ★変更(C71)：夜の店専用 → すべての店で申告できる */}
+        {storeStatus === "success" && store && (
           <section className="store-detail-price">
             <h2>実際に使った金額</h2>
 

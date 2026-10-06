@@ -408,6 +408,13 @@
   color: var(--paper-soft);
 }
 
+/* ★追加(C71)：昼・晩どちらもの店は柿色 */
+.store-detail-head__meal--both {
+  background: var(--persimmon);
+  border-color: var(--persimmon);
+  color: var(--paper-soft);
+}
+
 /* 写真と、その下の追加フォーム */
 .store-detail-media {
   display: flex;

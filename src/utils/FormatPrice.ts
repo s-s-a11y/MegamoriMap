@@ -29,12 +29,29 @@ export function formatBudgetBand(avgPrice: number): string {
  * メニュー価格の単純平均をそのまま予算帯に使うと実態と合わないため、
  * 夜の店だけ別の計算元(申告額)に切り替えている。
  */
+// ★変更(C71)：昼の店・昼晩どちらもの店でも金額を申告できるようにしたため、
+// 主となる算出元が0(未登録)のときは、もう一方を使う。
+//   晩の店：申告額の平均 → (無ければ)メニュー価格の平均
+//   昼の店・昼晩どちらもの店：メニュー価格の平均 → (無ければ)申告額の平均
 export function getBudgetSourcePrice(store: {
   meal_time: string;
   avg_price: number;
   price_per_person: number;
 }): number {
-  return store.meal_time === "dinner"
-    ? store.price_per_person
-    : store.avg_price;
+  const reported = store.price_per_person ?? 0;
+  const menuAverage = store.avg_price ?? 0;
+  if (store.meal_time === "dinner") {
+    return reported > 0 ? reported : menuAverage;
+  }
+  return menuAverage > 0 ? menuAverage : reported;
+}
+
+// ★追加(C71)：予算帯が「申告額の平均」から出ているか(店舗詳細の注記に使う)
+export function isBudgetFromReports(store: {
+  meal_time: string;
+  avg_price: number;
+  price_per_person: number;
+}): boolean {
+  const reported = store.price_per_person ?? 0;
+  return reported > 0 && getBudgetSourcePrice(store) === reported;
 }

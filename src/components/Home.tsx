@@ -4,6 +4,7 @@ import "../css_components/Home.css";
 import { UserNameForm } from "./UserNameForm";
 import { API_BASE_URL, readErrorMessage } from "../utils/api";
 import { formatWalk } from "../utils/format";
+import { MEAL_TIME_LABELS, matchesMealTime as isMealTimeMatch, type MealTime } from "../utils/mealTime"; // ★追加(C71)
 
 // ★追加(C44)：全店舗の地図(モーダル)。地図ライブラリは大きいため、ボタンを押したときだけ読み込む
 // (トップ画面の表示を遅くしないため。以前トップに地図を置いて遅くなった経緯がある)
@@ -23,7 +24,7 @@ type Store = {
   store_category_name: string;
   image_url: string;
   // ★追加：昼/晩の絞り込み用(居酒屋対応)
-  meal_time: "lunch" | "dinner";
+  meal_time: MealTime;
   // ★追加：夜(dinner)の店の予算帯表示に使う、申告額の平均
   price_per_person: number;
   // ★追加(C38)：登録日(YYYYMMDD)。新着(NEW)の印に使う(古いAPIの応答には無い)
@@ -71,12 +72,6 @@ function isNewStore(createdAt: string | undefined, now: number): boolean {
   ).getTime();
   return now - created < NEW_STORE_DAYS * 24 * 60 * 60 * 1000;
 }
-
-// meal_timeの値を、画面表示用の日本語に変換する
-const MEAL_TIME_LABELS: Record<string, string> = {
-  lunch: "昼",
-  dinner: "晩",
-};
 
 // ShowMegaMap は longitude/latitude が必須入力だが、実装上は絞り込みに
 // 使われていないため、固定値を送っておく。
@@ -177,7 +172,9 @@ export function HomePage({
         categoryFilter === ALL_CATEGORIES ||
         store.store_category_name === categoryFilter;
       const matchesMealTime =
-        mealTimeFilter === ALL_MEAL_TIMES || store.meal_time === mealTimeFilter;
+        mealTimeFilter === ALL_MEAL_TIMES ||
+        // ★変更(C71)：「昼・晩どちらも」の店は、昼でも晩でも出す
+        isMealTimeMatch(store.meal_time, mealTimeFilter);
       // ★追加(C39)：店名にキーワードが含まれるか(前後の空白は無視、英字の大小は区別しない)
       const matchesKeyword = store.title
         .toLowerCase()

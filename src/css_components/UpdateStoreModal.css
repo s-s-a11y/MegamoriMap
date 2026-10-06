@@ -1,0 +1,22 @@
+/*
+  UpdateStoreModal.tsx 専用のスタイル(★新規 C71)。
+*/
+
+/* 新しいカテゴリーの入力欄と「作って選ぶ」ボタンを横に並べる */
+.update-store__new-category {
+  display: flex;
+  gap: 8px;
+}
+
+.update-store__new-category input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 店名が住所のままのときの注意 */
+.update-store__name-warning {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brick);
+}

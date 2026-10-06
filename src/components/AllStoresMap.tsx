@@ -17,7 +17,7 @@ export interface MapStore {
   longitude: number;
   latitude: number;
   store_category_name: string;
-  meal_time: "lunch" | "dinner";
+  meal_time: "lunch" | "dinner" | "both";
   avg_price: number;
   price_per_person: number;
 }
@@ -28,9 +28,10 @@ interface AllStoresMapProps {
   onClose: () => void;
 }
 
-const MEAL_TIME_LABELS: Record<string, string> = { lunch: "昼", dinner: "晩" };
+const MEAL_TIME_LABELS: Record<string, string> = { lunch: "昼", dinner: "晩", both: "昼・晩" };
 // マーカーの色：昼はからし色、晩は濃い茶色(店舗カードのラベルと同じ色分け)
-const MARKER_COLORS: Record<string, string> = { lunch: "#e8a33d", dinner: "#241511" };
+// ★変更(C71)：「昼・晩どちらも」の店は柿色
+const MARKER_COLORS: Record<string, string> = { lunch: "#e8a33d", dinner: "#241511", both: "#d9481e" };
 // 店舗が1件も無いときの地図の中心(池袋駅付近)
 const FALLBACK_CENTER: [number, number] = [139.7109, 35.7295];
 
@@ -113,6 +114,7 @@ export function AllStoresMap({ stores, onSelect, onClose }: AllStoresMapProps) {
         <span className="all-stores-map__legend">
           <span className="all-stores-map__dot all-stores-map__dot--lunch" />昼
           <span className="all-stores-map__dot all-stores-map__dot--dinner" />晩
+          <span className="all-stores-map__dot all-stores-map__dot--both" />昼・晩
         </span>
         <button type="button" className="all-stores-map__close" onClick={onClose} aria-label="地図を閉じる">
           ×

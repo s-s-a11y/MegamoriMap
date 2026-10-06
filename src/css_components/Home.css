@@ -210,6 +210,16 @@
   background: var(--charcoal);
 }
 
+/* ★追加(C71)：昼・晩どちらもの店は柿色 */
+.store-card__meal--both {
+  background: var(--persimmon);
+}
+
+/* ★追加(C71)：昼・晩どちらもの店は柿色 */
+.store-card__meal--both {
+  background: var(--persimmon);
+}
+
 /* ---- ★修正(機能追加#4)：「今日どこ行く？」を廃止し、行ってみたい店リストへの入口ボタンに ---- */
 .home-wishlist {
   display: flex;

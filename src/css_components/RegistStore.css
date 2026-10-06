@@ -82,3 +82,11 @@
 .regist-store__category select {
   flex: 1 1 12em;
 }
+
+/* ★追加(C71)：店名が住所のままのときの注意 */
+.regist-store__name-warning {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--brick);
+}

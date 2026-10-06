@@ -54,6 +54,11 @@
   background: #241511;
 }
 
+/* ★追加(C71)：昼・晩どちらもの店 */
+.all-stores-map__dot--both {
+  background: var(--persimmon);
+}
+
 /* 閉じるボタン：丸の中に×を中央寄せ(App.css の button 共通の余白を打ち消す) */
 .all-stores-map__close {
   margin-left: auto;

@@ -5,6 +5,7 @@ import { ImagePickerWithRotation } from "./ImagePickerWithRotation"; // 実際�
 import "../css_components/RegistStore.css"; // ★追加(C65)
 import { buildAuthHeaders } from "../utils/authHeaders"; // 実際の配置場所に合わせてパスを調整してください
 import { API_BASE_URL, readErrorMessage } from "../utils/api";
+import { looksLikeAddress, type MealTime } from "../utils/mealTime"; // ★追加(C71)
 
 // 店舗検索API（SearchStore）が返す検索結果1件分
 interface SearchResult {
@@ -93,12 +94,15 @@ export function RegisterStorePage({
   const [registStatus, setRegistStatus] = useState<Status>("idle");
   const [registError, setRegistError] = useState<string | null>(null);
   const [category, setCategory] = useState<string>("");
-  // ★追加：昼/晩(居酒屋対応)
-  const [mealTime, setMealTime] = useState<"lunch" | "dinner" | "">(
+  // ★追加：昼/晩(居酒屋対応)。★変更(C71)：「昼・晩どちらも」を追加
+  const [mealTime, setMealTime] = useState<MealTime | "">(
     preset?.mealTime ?? "",
   );
-  // ★追加：夜(dinner)の店で使う、登録者自身が使った金額(任意)
+  // ★追加：登録者自身が使った金額(任意)。★変更(C71)：夜の店だけ → すべての店
   const [pricePerPerson, setPricePerPerson] = useState("");
+  // ★追加(C71)：登録する店名。検索結果の名前を初期値にし、直せるようにする
+  // (検索で住所を選ぶと、住所がそのまま店名になってしまうため)
+  const [storeName, setStoreName] = useState(preset?.place.Title ?? "");
 
   // ---- コメント・画像まわりの状態 ----
   const [comment, setComment] = useState("");
@@ -184,7 +188,7 @@ export function RegisterStorePage({
         headers: buildAuthHeaders(auth.user?.id_token),
         body: JSON.stringify({
           PlaceId: selected.PlaceId,
-          Title: selected.Title,
+          Title: storeName.trim(), // ★変更(C71)：画面で直した店名
           Position: selected.Position,
           Address: {
             Label: selected.Address.Label,
@@ -192,11 +196,9 @@ export function RegisterStorePage({
           store_category_name: category,
           comment,
           meal_time: mealTime,
-          // ★追加：夜の店の場合のみ、入力されていれば送る
+          // ★追加：入力されていれば送る(★変更(C71)：夜の店に限らない)
           price_per_person:
-            mealTime === "dinner" && pricePerPerson !== ""
-              ? Number(pricePerPerson)
-              : undefined,
+            pricePerPerson !== "" ? Number(pricePerPerson) : undefined,
           image_url,
         }),
       });
@@ -328,7 +330,10 @@ export function RegisterStorePage({
                       type="radio"
                       name="selected-store"
                       checked={selected?.PlaceId === item.PlaceId}
-                      onChange={() => setSelected(item)}
+                      onChange={() => {
+                        setSelected(item);
+                        setStoreName(item.Title); // ★追加(C71)
+                      }}
                     />{" "}
                     <strong>{item.Title}</strong>
                     <br />
@@ -386,10 +391,22 @@ export function RegisterStorePage({
               登録内容を確認する
             </h3>
             <form onSubmit={handleRegist}>
-              <p>
-                「<strong>{selected.Title}</strong>
-                」を登録します。よろしいですか？
-              </p>
+              {/* ★変更(C71)：店名を確認・修正できる入力欄にする */}
+              <label>
+                店名
+                <input
+                  type="text"
+                  value={storeName}
+                  maxLength={50}
+                  onChange={(e) => setStoreName(e.target.value)}
+                  required
+                />
+              </label>
+              {looksLikeAddress(storeName) && (
+                <p role="status" className="regist-store__name-warning">
+                  店名が住所になっています。お店の名前に直してから登録してください。
+                </p>
+              )}
 
               {/* ★追加：昼/晩(居酒屋対応)。必須項目 */}
               <fieldset>
@@ -415,21 +432,31 @@ export function RegisterStorePage({
                   />{" "}
                   晩
                 </label>
+                {/* ★追加(C71)：昼・晩どちらも */}
+                <label>
+                  <input
+                    type="radio"
+                    name="meal-time"
+                    value="both"
+                    checked={mealTime === "both"}
+                    onChange={() => setMealTime("both")}
+                  />{" "}
+                  昼・晩どちらも
+                </label>
               </fieldset>
 
-              {/* ★追加：夜の店を選んだ時だけ表示する、使った金額の入力欄(任意) */}
-              {mealTime === "dinner" && (
-                <label>
-                  実際に使った金額（1人あたり、任意）
-                  <input
-                    type="number"
-                    value={pricePerPerson}
-                    min={0}
-                    onChange={(e) => setPricePerPerson(e.target.value)}
-                    placeholder="例: 4000"
-                  />
-                </label>
-              )}
+              {/* ★追加：使った金額の入力欄(任意)。★変更(C71)：夜の店だけ → すべての店で表示 */}
+              <label>
+                実際に使った金額（1人あたり、任意）
+                <input
+                  type="number"
+                  value={pricePerPerson}
+                  min={0}
+                  onChange={(e) => setPricePerPerson(e.target.value)}
+                  placeholder="例: 1200"
+                />
+                <small>予算帯の表示に使います。昼の店は、メニューが登録されるとメニューの平均価格が優先されます</small>
+              </label>
 
               <label>
                 コメント（任意）
@@ -459,7 +486,8 @@ export function RegisterStorePage({
               <button
                 type="submit"
                 disabled={
-                  registStatus === "loading" || !auth.isAuthenticated || !mealTime
+                  registStatus === "loading" || !auth.isAuthenticated || !mealTime ||
+                  !storeName.trim()
                 }
               >
                 {registStatus === "loading" ? "登録中..." : "この店舗を登録する"}
